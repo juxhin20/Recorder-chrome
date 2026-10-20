@@ -73,43 +73,73 @@ nav .links a.gh svg{width:20px;height:20px}
 .hero h1{font-size:clamp(40px,5.4vw,62px);margin:20px 0 20px}
 .hero h1 span{background:linear-gradient(90deg,#fff 0%,#ffb4b6 60%,#ff6b70 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 
-/* hero mock: browser being recorded + the extension menu */
-.stage{position:relative;padding:0 0 60px}
+/* hero mock: animated demo (cursor → menu → 3-2-1 → recording) */
+.stage{position:relative;padding:0 0 46px}
 .browser{position:relative;border-radius:16px;overflow:hidden;background:#1a1d2b;border:1px solid var(--line);box-shadow:0 50px 100px -40px rgba(0,0,0,.95)}
 .browser .top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#202436;border-bottom:1px solid var(--line)}
 .browser .dots{display:flex;gap:6px}.browser .dots i{width:10px;height:10px;border-radius:50%;background:#ff5f57}.browser .dots i:nth-child(2){background:#febc2e}.browser .dots i:nth-child(3){background:#28c840}
-.browser .url{flex:1;min-width:0;height:26px;border-radius:99px;background:rgba(0,0,0,.3);display:flex;align-items:center;padding:0 12px;font:500 12px ui-monospace,Menlo,monospace;color:#c9cde0;white-space:nowrap;overflow:hidden}
-.browser .ext{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:rgba(239,58,64,.18);position:relative}
-.browser .ext img{width:18px;height:18px}
-.browser .ext b{position:absolute;right:-6px;bottom:-5px;font:700 9px/1 -apple-system,sans-serif;background:var(--red2);color:#fff;padding:2px 4px;border-radius:5px;opacity:0;animation:recBadge 8s infinite}
-.page{position:relative;aspect-ratio:16/9.4;background:linear-gradient(135deg,#0ea5e9,#6366f1 60%,#8b5cf6);display:grid;place-items:center;overflow:hidden}
+.browser .url{flex:1;min-width:0;height:26px;border-radius:99px;background:rgba(0,0,0,.3);display:flex;align-items:center;gap:8px;padding:0 12px;font:500 12px ui-monospace,Menlo,monospace;color:#c9cde0;white-space:nowrap;overflow:hidden}
+.browser .url svg{width:12px;height:12px;color:#8b90a8;flex:none}
+.browser .ext{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;position:relative;transition:background .2s}
+.browser .ext img{width:20px;height:20px}
+.browser .ext b{position:absolute;right:-7px;bottom:-6px;font:700 9px/1 -apple-system,sans-serif;background:var(--red2);color:#fff;padding:2px 4px;border-radius:5px;opacity:0;transform:scale(.6);transition:.25s}
+.s-open .browser .ext,.s-click .browser .ext{background:rgba(255,255,255,.12)}
+.s-rec .browser .ext b{opacity:1;transform:none}
+.page{position:relative;aspect-ratio:16/9.6;background:linear-gradient(135deg,#0ea5e9,#6366f1 60%,#8b5cf6);overflow:hidden}
 .page .ph{position:absolute;inset:9% 8%;display:grid;grid-template-rows:auto auto 1fr;gap:12px}
-.page .ph i{display:block;border-radius:8px;background:rgba(255,255,255,.22)}
+.page .ph i{display:block;border-radius:8px;background:rgba(255,255,255,.24)}
 .page .ph i:nth-child(1){height:22px;width:46%}.page .ph i:nth-child(2){height:12px;width:70%;opacity:.7}
 .page .ph .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-self:end}
 .page .ph .row i{height:auto;aspect-ratio:4/3;width:auto;background:rgba(255,255,255,.16)}
-.ring{position:absolute;inset:0;border:3px solid transparent;border-radius:0;animation:ring 8s infinite;pointer-events:none}
-.count{position:absolute;left:38%;top:42%;margin:-59px 0 0 -59px;z-index:2;width:118px;height:118px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.86);border:4px solid var(--red2);font:800 64px/1 -apple-system,sans-serif;color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.4);opacity:0;animation:countShow 8s infinite}
-.count span{position:absolute;opacity:0}
-.count span:nth-child(1){animation:n1 8s infinite}.count span:nth-child(2){animation:n2 8s infinite}.count span:nth-child(3){animation:n3 8s infinite}
-.rec{position:absolute;left:14px;top:14px;z-index:2;display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;background:rgba(15,23,42,.8);font:700 12.5px/1 -apple-system,sans-serif;letter-spacing:.04em;opacity:0;animation:recShow 8s infinite}
-.rec::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--red2);animation:pulse 1.2s infinite}
-@keyframes pulse{50%{opacity:.35}}
-@keyframes countShow{0%,4%{opacity:0;transform:scale(.8)}8%,40%{opacity:1;transform:none}44%,100%{opacity:0;transform:scale(.85)}}
-@keyframes n1{0%,6%{opacity:0;transform:scale(1.5)}9%,17%{opacity:1;transform:none}20%,100%{opacity:0}}
-@keyframes n2{0%,19%{opacity:0;transform:scale(1.5)}22%,29%{opacity:1;transform:none}32%,100%{opacity:0}}
-@keyframes n3{0%,31%{opacity:0;transform:scale(1.5)}34%,40%{opacity:1;transform:none}43%,100%{opacity:0}}
-@keyframes recShow{0%,44%{opacity:0}48%,96%{opacity:1}100%{opacity:0}}
-@keyframes recBadge{0%,44%{opacity:0}48%,96%{opacity:1}100%{opacity:0}}
-@keyframes ring{0%,44%{border-color:transparent}48%,96%{border-color:rgba(239,58,64,.9)}100%{border-color:transparent}}
-.menu{position:absolute;right:-22px;bottom:4px;width:min(270px,48%);height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 70px -10px rgba(0,0,0,.85);animation:bob 6s ease-in-out infinite}
+.ring{position:absolute;inset:0;box-shadow:inset 0 0 0 3px rgba(239,58,64,0);transition:box-shadow .35s;pointer-events:none}
+.s-rec .ring{box-shadow:inset 0 0 0 3px rgba(239,58,64,.95)}
+.shade{position:absolute;inset:0;background:rgba(2,6,23,0);transition:background .3s}
+.s-count .shade{background:rgba(2,6,23,.28)}
+.count{position:absolute;left:50%;top:50%;width:116px;height:116px;margin:-58px 0 0 -58px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.88);border:4px solid var(--red2);font:800 62px/1 -apple-system,sans-serif;color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.4);opacity:0;transform:scale(.8);transition:opacity .25s,transform .25s}
+.s-count .count{opacity:1;transform:none}
+.count.pop{animation:pop .9s ease-out}
+@keyframes pop{0%{transform:scale(1.45);opacity:0}22%{transform:scale(1);opacity:1}100%{transform:scale(.92)}}
+.rec{position:absolute;left:14px;top:14px;display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:99px;background:rgba(15,23,42,.82);font:700 12.5px/1 -apple-system,sans-serif;letter-spacing:.03em;font-variant-numeric:tabular-nums;opacity:0;transform:translateY(-6px);transition:.3s}
+.rec::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--red2);animation:blink 1.2s infinite}
+.s-rec .rec{opacity:1;transform:none}
+@keyframes blink{50%{opacity:.35}}
+
+/* the extension menu, drawn in HTML so it stays sharp */
+.pop-menu{position:absolute;right:10px;top:46px;width:min(290px,64%);background:#0f1420;border:1px solid rgba(255,255,255,.12);border-radius:14px;box-shadow:0 30px 70px -10px rgba(0,0,0,.85);padding:12px;font:13px/1.3 -apple-system,system-ui,sans-serif;opacity:0;transform:translateY(-8px) scale(.97);transform-origin:top right;transition:opacity .25s,transform .25s;pointer-events:none}
+.s-open .pop-menu{opacity:1;transform:none}
+.pm-head{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.pm-head img{width:26px;height:26px}
+.pm-head b{display:block;font-size:13.5px}.pm-head small{display:block;color:#8b97a8;font-size:10.5px}
+.pm-head .ic{margin-left:auto;display:flex;gap:10px;color:#8b97a8}.pm-head .ic svg{width:16px;height:16px}
+.pm-modes{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.pm-mode{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;background:#131a25;border:1px solid #253043;transition:border-color .2s,transform .12s}
+.pm-mode i{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:#3a1518;color:#ef4444;flex:none}
+.pm-mode i svg{width:15px;height:15px}
+.pm-mode b{display:block;font-size:12px}.pm-mode small{display:block;color:#8b97a8;font-size:10px}
+.s-hover .pm-mode.tab{border-color:#ef4444}
+.s-click .pm-mode.tab{transform:scale(.96)}
+.pm-audio{display:flex;gap:7px;margin-top:8px}
+.pm-chip{display:flex;align-items:center;gap:5px;padding:0 9px;height:30px;border-radius:9px;background:#3a1518;color:#ef4444;font-weight:600;font-size:11.5px;white-space:nowrap}
+.pm-sel{flex:1;display:flex;align-items:center;gap:6px;padding:0 9px;height:30px;border-radius:9px;background:#131a25;border:1px solid #253043;font-size:11.5px;font-weight:550;white-space:nowrap;overflow:hidden}
+.pm-sel svg,.pm-chip svg{width:13px;height:13px;flex:none}.pm-sel span{flex:1}
+.pm-foot{display:flex;align-items:center;gap:6px;margin:10px -12px -12px;padding:8px 12px;border-top:1px solid #253043;background:#131a25;border-radius:0 0 14px 14px;color:#8b97a8;font-size:10.5px;white-space:nowrap;overflow:hidden}
+.pm-foot svg{width:12px;height:12px;flex:none}
+
+.cursor{position:absolute;left:30%;top:70%;width:22px;height:22px;z-index:5;transition:left .8s cubic-bezier(.4,0,.2,1),top .8s cubic-bezier(.4,0,.2,1),opacity .3s;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.cursor::after{content:"";position:absolute;left:-9px;top:-9px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.55);transform:scale(0);opacity:0}
+.cursor.tap::after{animation:tap .45s ease-out}
+@keyframes tap{0%{transform:scale(.2);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+.s-hide-cursor .cursor{opacity:0}
+
 .float{position:absolute;display:flex;align-items:center;gap:10px;background:rgba(20,23,36,.92);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:13px;box-shadow:0 20px 40px -16px rgba(0,0,0,.8);backdrop-filter:blur(12px)}
 .float .dot{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(52,211,153,.15);color:var(--green)}
 .float .dot svg{width:16px;height:16px}
 .float small{display:block;color:var(--muted);font-size:11.5px}
-.f1{left:-16px;bottom:20px;animation:bob 5s ease-in-out -2.5s infinite}
+.f1{left:-16px;bottom:-4px;animation:bob 5s ease-in-out -2.5s infinite}
+.f2{right:-14px;bottom:10px;animation:bob 5s ease-in-out infinite}
+.f2 .dot{background:rgba(239,58,64,.15);color:var(--red2)}
 @keyframes bob{50%{transform:translateY(-6px)}}
-@media(max-width:560px){.menu{right:0;bottom:10px;width:52%}.f1{left:0}}
+@media(max-width:560px){.f1{left:0}.f2{display:none}.pop-menu{width:76%;padding:10px}.count{width:84px;height:84px;margin:-42px 0 0 -42px;font-size:44px}}
 
 /* numbers */
 .numbers{padding:0}
@@ -220,22 +250,37 @@ footer a{text-decoration:none}footer a:hover{color:var(--text)}
       </div>
     </div>
 
-    <div class="stage" aria-hidden="true">
+    <div class="stage" id="demo" aria-hidden="true">
       <div class="browser">
         <div class="top">
           <div class="dots"><i></i><i></i><i></i></div>
-          <div class="url">appalbania.com/demo</div>
-          <div class="ext"><img src="img/icon.svg" alt=""><b>0:12</b></div>
+          <div class="url"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>appalbania.com/demo</div>
+          <div class="ext" id="extIcon"><img src="img/icon.svg" alt=""><b id="badge">0:00</b></div>
         </div>
         <div class="page">
           <div class="ph"><i></i><i></i><div class="row"><i></i><i></i><i></i></div></div>
+          <div class="shade"></div>
           <div class="ring"></div>
-          <div class="rec">REC 00:12</div>
-          <div class="count"><span>3</span><span>2</span><span>1</span></div>
+          <div class="rec" id="recPill">REC 00:00</div>
+          <div class="count" id="count">3</div>
         </div>
       </div>
-      <img class="menu" src="img/popup-dark.webp" alt="" width="680" height="432">
+      <div class="pop-menu">
+        <div class="pm-head"><img src="img/icon.svg" alt=""><div><b>Recorder</b><small>Chrome AppAlbania</small></div>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span></div>
+        <div class="pm-modes">
+          <div class="pm-mode tab" id="tabBtn"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="M2.5 9.5h19M10.5 4.5v5"/><circle cx="12" cy="14.5" r="2" fill="currentColor" stroke="none"/></svg></i><span><b>This tab</b><small>Page only</small></span></div>
+          <div class="pm-mode"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4M2.5 7.5h19"/></svg></i><span><b>Window</b><small>Or full screen</small></span></div>
+        </div>
+        <div class="pm-audio">
+          <span class="pm-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/></svg>PC sound</span>
+          <span class="pm-sel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span>AirPods Pro</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        </div>
+        <div class="pm-foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2 2.2h7.4A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/></svg>Downloads / Recorder Chrome AppAlbania</div>
+      </div>
+      <svg class="cursor" id="cursor" viewBox="0 0 24 24"><path d="M4 2.5 19 13.6l-6.6.9 3.8 7.2-2.8 1.4-3.7-7.3L4 20.3z" fill="#fff" stroke="#0b0d14" stroke-width="1.4" stroke-linejoin="round"/></svg>
       <div class="float f1"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div>1920 × 1080 MP4<small>H.264 video + AAC sound</small></div></div>
+      <div class="float f2"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></div><div>PC sound + mic<small>AirPods, headphones, Mac mic</small></div></div>
     </div>
   </div>
 </header>
@@ -399,6 +444,35 @@ footer a{text-decoration:none}footer a:hover{color:var(--text)}
   if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return}
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{rootMargin:'0px 0px -8% 0px'});
   els.forEach(function(e){io.observe(e)});
+})();
+
+// Hero demo: cursor opens the menu, picks "This tab", 3-2-1, then records.
+(function(){
+  var st=document.getElementById('demo'); if(!st) return;
+  var cur=document.getElementById('cursor'), cnt=document.getElementById('count'),
+      pill=document.getElementById('recPill'), badge=document.getElementById('badge');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){st.className='stage s-open s-hide-cursor';return}
+  function at(el,dx,dy){var a=st.getBoundingClientRect(),b=el.getBoundingClientRect();cur.style.left=(b.left-a.left+b.width*dx)+'px';cur.style.top=(b.top-a.top+b.height*dy)+'px'}
+  function set(c){st.className='stage '+c}
+  function tap(){cur.classList.remove('tap');void cur.offsetWidth;cur.classList.add('tap')}
+  var timer, steps=[
+    [0,function(){set('');cur.style.left='34%';cur.style.top='74%'}],
+    [700,function(){at(document.getElementById('extIcon'),.5,.55)}],
+    [1600,function(){tap();set('s-click s-open')}],
+    [2200,function(){at(document.getElementById('tabBtn'),.42,.6);set('s-open')}],
+    [3100,function(){set('s-open s-hover')}],
+    [3500,function(){tap();set('s-open s-hover s-click')}],
+    [3900,function(){set('s-count s-hide-cursor');n(3)}],
+    [4900,function(){n(2)}],
+    [5900,function(){n(1)}],
+    [6850,function(){set('s-rec s-hide-cursor');run()}],
+    [12600,function(){clearInterval(timer);set('s-hide-cursor')}],
+    [13400,null]
+  ];
+  function n(v){cnt.textContent=v;cnt.classList.remove('pop');void cnt.offsetWidth;cnt.classList.add('pop')}
+  function run(){var t0=Date.now(),f=function(){var s=Math.floor((Date.now()-t0)/1000)+1,mm=('0'+Math.floor(s/60)).slice(-2),ss=('0'+s%60).slice(-2);pill.textContent='REC '+mm+':'+ss;badge.textContent=Math.floor(s/60)+':'+ss};f();timer=setInterval(f,250)}
+  function loop(){steps.forEach(function(s){if(s[1])setTimeout(s[1],s[0])});setTimeout(loop,steps[steps.length-1][0])}
+  loop();
 })();
 </script>
 </body>
