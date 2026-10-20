@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recordings · Recorder Chrome AppAlbania</title>
+<link rel="icon" href="../icons/icon32.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="../icons/icon48.png" alt=""><div>Recorder<small>Chrome AppAlbania</small></div></div>
+    <nav>
+      <a href="library.html" class="on" data-icon="film"><span data-t="recordings"></span></a>
+      <a href="options.html" data-icon="gear"><span data-t="settings"></span></a>
+    </nav>
+  </div>
+
+  <div class="wrap">
+    <div class="lib-head">
+      <div>
+        <h1 data-t="libTitle"></h1>
+        <p class="muted" id="summary"></p>
+      </div>
+      <button class="btn" id="refresh" data-icon="refresh"><span data-t="refresh"></span></button>
+    </div>
+
+    <div class="notice hidden" id="locked">
+      <span data-t="folderLocked"></span>
+      <button class="btn primary" id="grant" data-icon="lock"><span data-t="grant"></span></button>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="empty hidden" id="empty">
+      <span data-icon="film"></span>
+      <b data-t="empty"></b>
+      <span data-t="emptySub"></span>
+    </div>
+  </div>
+
+  <dialog id="player">
+    <div class="bar"><b id="playerName"></b><button class="icon-btn" id="closePlayer" data-icon="close"></button></div>
+    <video id="playerVideo" controls autoplay></video>
+  </dialog>
+
+  <script type="module" src="library.js"></script>
+</body>
+</html>

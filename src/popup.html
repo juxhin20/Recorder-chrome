@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Recorder Chrome AppAlbania</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="../icons/icon48.png" alt="">
+      <div>Recorder<small>Chrome AppAlbania</small></div>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" id="openLib" data-icon="film" data-title="recordings"></button>
+      <button class="icon-btn" id="openSet" data-icon="gear" data-title="settings"></button>
+    </div>
+  </header>
+
+  <main id="idle">
+    <button class="big" id="recTab">
+      <span class="ico" data-icon="tab"></span>
+      <span><b data-t="tab"></b><small data-t="tabSub"></small></span>
+    </button>
+    <button class="big" id="recWin">
+      <span class="ico" data-icon="window"></span>
+      <span><b data-t="window"></b><small data-t="windowSub"></small></span>
+    </button>
+    <div class="audio-row">
+      <button class="chip" id="sndBtn" aria-pressed="true"><span data-icon="speaker"></span><span data-t="sound"></span></button>
+      <label class="mic-pick"><span data-icon="mic"></span><select id="micSel" aria-label=""></select></label>
+    </div>
+    <p class="err hidden" id="err"></p>
+  </main>
+
+  <main id="active" class="hidden">
+    <div class="status"><span class="dot"></span><span id="statusText"></span></div>
+    <div class="timer" id="timer">00:00</div>
+    <div class="controls">
+      <button class="btn" id="pauseBtn"></button>
+      <button class="btn primary" id="stopBtn"></button>
+    </div>
+    <button class="btn ghost small" id="cancelBtn" data-t="cancel"></button>
+  </main>
+
+  <footer>
+    <button class="where" id="where" title="">
+      <span data-icon="folder"></span><span id="whereText"></span>
+    </button>
+    <button class="btn primary small hidden" id="grant" data-t="needAccess"></button>
+    <span class="kbd" id="kbd"></span>
+  </footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
