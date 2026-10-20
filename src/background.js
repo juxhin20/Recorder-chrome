@@ -117,7 +117,7 @@ function showCountdown(tabId) {
       const iv = setInterval(() => { if (--n > 0) show(); }, 1000);
       setTimeout(() => { clearInterval(iv); host.remove(); }, 2900);
     }
-  }).catch(() => {});
+  }).catch(e => console.warn('Countdown overlay skipped:', e.message));
 }
 
 async function openLibrary() {
