@@ -19,14 +19,16 @@
   </header>
 
   <main id="idle">
-    <button class="big" id="recTab">
-      <span class="ico" data-icon="tab"></span>
-      <span><b data-t="tab"></b><small data-t="tabSub"></small></span>
-    </button>
-    <button class="big" id="recWin">
-      <span class="ico" data-icon="window"></span>
-      <span><b data-t="window"></b><small data-t="windowSub"></small></span>
-    </button>
+    <div class="modes">
+      <button class="big" id="recTab">
+        <span class="ico" data-icon="tab"></span>
+        <b data-t="tabShort"></b><small data-t="tabSub"></small>
+      </button>
+      <button class="big" id="recWin">
+        <span class="ico" data-icon="screen"></span>
+        <b data-t="windowShort"></b><small data-t="windowSubShort"></small>
+      </button>
+    </div>
     <div class="audio-row">
       <button class="chip" id="sndBtn" aria-pressed="true"><span data-icon="speaker"></span><span data-t="sound"></span></button>
       <label class="mic-pick"><span data-icon="mic"></span><select id="micSel" aria-label=""></select></label>

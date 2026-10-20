@@ -120,7 +120,8 @@ export async function fillMicSelect(select, t, current) {
 
 const T = {
   sq: {
-    tab: 'Regjistro tab-in', tabSub: 'Vetëm faqja aktuale, me zë',
+    tab: 'Regjistro tab-in', tabSub: 'Vetëm faqja aktuale, me zë', tabShort: 'Tab-i',
+    windowShort: 'Dritarja / ekrani', windowSubShort: 'Dritare Chrome ose ekrani, me zërin e PC',
     window: 'Regjistro dritaren / ekranin', windowSub: 'Dritarja Chrome ose gjithë ekrani, me zërin e PC',
     recording: 'Duke regjistruar', paused: 'Në pauzë', countdown: 'Fillon…', saving: 'Duke ruajtur…',
     pause: 'Pauzë', resume: 'Vazhdo', stop: 'Ndalo', cancel: 'Anulo',
@@ -148,7 +149,8 @@ const T = {
     notSupported: 'Ky format nuk mbështetet këtu, do përdoret WebM.'
   },
   en: {
-    tab: 'Record this tab', tabSub: 'Current page only, with sound',
+    tab: 'Record this tab', tabSub: 'Current page only, with sound', tabShort: 'This tab',
+    windowShort: 'Window / screen', windowSubShort: 'Chrome window or screen, with PC sound',
     window: 'Record window / screen', windowSub: 'Chrome window or whole screen, with PC sound',
     recording: 'Recording', paused: 'Paused', countdown: 'Starting…', saving: 'Saving…',
     pause: 'Pause', resume: 'Resume', stop: 'Stop', cancel: 'Cancel',
@@ -193,7 +195,8 @@ export function applyT(t, root = document) {
 
 // Inline SVG icons (no emojis).
 export const ICON = {
-  tab: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 9h18"/><path d="M7 5v4"/></svg>',
+  tab: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="M2.5 9.5h19M10.5 4.5v5"/><path d="M4.5 6.2h4.2v2" fill="currentColor"/><circle cx="12" cy="14.5" r="2" fill="currentColor" stroke="none"/></svg>',
+  screen: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/><path d="M2.5 7.5h19"/></svg>',
   window: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M2.5 8.5h19"/><circle cx="5.5" cy="6.25" r=".6"/><circle cx="7.75" cy="6.25" r=".6"/><circle cx="10" cy="6.25" r=".6"/></svg>',
   pause: '<svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg>',
   play: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
