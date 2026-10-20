@@ -120,8 +120,8 @@ export async function fillMicSelect(select, t, current) {
 
 const T = {
   sq: {
-    tab: 'Regjistro tab-in', tabSub: 'Vetëm faqja aktuale, me zë', tabShort: 'Tab-i',
-    windowShort: 'Dritarja / ekrani', windowSubShort: 'Dritare Chrome ose ekrani, me zërin e PC',
+    tab: 'Regjistro tab-in', tabSub: 'Vetëm faqja aktuale, me zë', tabShort: 'Tab-i', tabMini: 'Vetëm faqja', windowMini: 'Ose gjithë ekrani',
+    windowShort: 'Dritarja', windowSubShort: 'Dritare Chrome ose ekrani, me zërin e PC',
     window: 'Regjistro dritaren / ekranin', windowSub: 'Dritarja Chrome ose gjithë ekrani, me zërin e PC',
     recording: 'Duke regjistruar', paused: 'Në pauzë', countdown: 'Fillon…', saving: 'Duke ruajtur…',
     pause: 'Pauzë', resume: 'Vazhdo', stop: 'Ndalo', cancel: 'Anulo',
@@ -149,8 +149,8 @@ const T = {
     notSupported: 'Ky format nuk mbështetet këtu, do përdoret WebM.'
   },
   en: {
-    tab: 'Record this tab', tabSub: 'Current page only, with sound', tabShort: 'This tab',
-    windowShort: 'Window / screen', windowSubShort: 'Chrome window or screen, with PC sound',
+    tab: 'Record this tab', tabSub: 'Current page only, with sound', tabShort: 'This tab', tabMini: 'Page only', windowMini: 'Or full screen',
+    windowShort: 'Window', windowSubShort: 'Chrome window or screen, with PC sound',
     window: 'Record window / screen', windowSub: 'Chrome window or whole screen, with PC sound',
     recording: 'Recording', paused: 'Paused', countdown: 'Starting…', saving: 'Saving…',
     pause: 'Pause', resume: 'Resume', stop: 'Stop', cancel: 'Cancel',
