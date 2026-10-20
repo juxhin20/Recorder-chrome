@@ -30,7 +30,7 @@ a{color:inherit}
 h1,h2,h3{font-family:-apple-system,"SF Pro Display","Inter",sans-serif;letter-spacing:-.025em;line-height:1.08}
 h2{font-size:clamp(30px,4.2vw,46px);margin-bottom:14px}
 .lead{color:var(--muted);font-size:clamp(16px,1.6vw,19px);max-width:660px}
-section{padding:104px 0;position:relative}
+section{padding:104px 0;position:relative;overflow-x:clip}
 .center{text-align:center}.center .lead{margin:0 auto}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:#ff8a8f;margin-bottom:14px}
 .eyebrow::before{content:"";width:18px;height:1.5px;background:currentColor;border-radius:2px}
@@ -89,7 +89,7 @@ nav .links a.gh svg{width:20px;height:20px}
 .page .ph .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-self:end}
 .page .ph .row i{height:auto;aspect-ratio:4/3;width:auto;background:rgba(255,255,255,.16)}
 .ring{position:absolute;inset:0;border:3px solid transparent;border-radius:0;animation:ring 8s infinite;pointer-events:none}
-.count{position:relative;z-index:2;width:118px;height:118px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.86);border:4px solid var(--red2);font:800 64px/1 -apple-system,sans-serif;color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.4);opacity:0;animation:countShow 8s infinite}
+.count{position:absolute;left:38%;top:42%;margin:-59px 0 0 -59px;z-index:2;width:118px;height:118px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.86);border:4px solid var(--red2);font:800 64px/1 -apple-system,sans-serif;color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.4);opacity:0;animation:countShow 8s infinite}
 .count span{position:absolute;opacity:0}
 .count span:nth-child(1){animation:n1 8s infinite}.count span:nth-child(2){animation:n2 8s infinite}.count span:nth-child(3){animation:n3 8s infinite}
 .rec{position:absolute;left:14px;top:14px;z-index:2;display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;background:rgba(15,23,42,.8);font:700 12.5px/1 -apple-system,sans-serif;letter-spacing:.04em;opacity:0;animation:recShow 8s infinite}
@@ -102,14 +102,14 @@ nav .links a.gh svg{width:20px;height:20px}
 @keyframes recShow{0%,44%{opacity:0}48%,96%{opacity:1}100%{opacity:0}}
 @keyframes recBadge{0%,44%{opacity:0}48%,96%{opacity:1}100%{opacity:0}}
 @keyframes ring{0%,44%{border-color:transparent}48%,96%{border-color:rgba(239,58,64,.9)}100%{border-color:transparent}}
-.menu{position:absolute;right:-18px;top:46px;width:min(300px,62%);border-radius:14px;border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 70px -10px rgba(0,0,0,.85);animation:bob 6s ease-in-out infinite}
+.menu{position:absolute;right:-22px;bottom:4px;width:min(270px,48%);height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 70px -10px rgba(0,0,0,.85);animation:bob 6s ease-in-out infinite}
 .float{position:absolute;display:flex;align-items:center;gap:10px;background:rgba(20,23,36,.92);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:13px;box-shadow:0 20px 40px -16px rgba(0,0,0,.8);backdrop-filter:blur(12px)}
 .float .dot{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(52,211,153,.15);color:var(--green)}
 .float .dot svg{width:16px;height:16px}
 .float small{display:block;color:var(--muted);font-size:11.5px}
-.f1{left:-16px;bottom:4px;animation:bob 5s ease-in-out -2.5s infinite}
+.f1{left:-16px;bottom:20px;animation:bob 5s ease-in-out -2.5s infinite}
 @keyframes bob{50%{transform:translateY(-6px)}}
-@media(max-width:560px){.menu{right:-6px;top:30px;width:58%}.f1{left:6px}}
+@media(max-width:560px){.menu{right:0;bottom:10px;width:52%}.f1{left:0}}
 
 /* numbers */
 .numbers{padding:0}
