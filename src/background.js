@@ -56,7 +56,7 @@ async function start(mode, tabId) {
   const settings = await getSettings();
   const t = makeT(settings);
 
-  let streamId, canAudio = false;
+  let streamId, canAudio = false, overlayTab = null;
   if (mode === 'tab') {
     const tab = tabId ? await chrome.tabs.get(tabId) : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
     if (!tab || /^(chrome|edge|about|chrome-extension|devtools):/.test(tab.url || '') || tab.url?.startsWith('https://chromewebstore.google.com')) {
@@ -68,6 +68,7 @@ async function start(mode, tabId) {
       return { ok: false, error: e.message };
     }
     canAudio = true;
+    overlayTab = tab.id;
   } else {
     const res = await new Promise(resolve => {
       chrome.desktopCapture.chooseDesktopMedia(['window', 'screen', 'audio'], (id, opts) => resolve({ id, opts }));
@@ -75,6 +76,7 @@ async function start(mode, tabId) {
     if (!res.id) return { ok: false, error: 'cancelled' };
     streamId = res.id;
     canAudio = !!res.opts?.canRequestAudioTrack;
+    overlayTab = (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id;
   }
 
   await update({ status: settings.countdown ? 'countdown' : 'recording', mode, elapsed: 0, count: 3 });
@@ -85,7 +87,37 @@ async function start(mode, tabId) {
     await closeOffscreen();
     return { ok: false, error: r?.error || 'Could not start recording' };
   }
+  if (settings.countdown && overlayTab) showCountdown(overlayTab);
   return { ok: true };
+}
+
+// Big 3-2-1 in the middle of the page. It removes itself just before recording starts,
+// so it never ends up in the video. Pages Chrome won't let us script just skip it.
+function showCountdown(tabId) {
+  chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => {
+      const host = document.createElement('div');
+      host.style.cssText = 'all:initial;position:fixed;inset:0;z-index:2147483647;pointer-events:none';
+      const root = host.attachShadow({ mode: 'closed' });
+      root.innerHTML = `<style>
+        .bg{position:fixed;inset:0;background:rgba(2,6,23,.28);animation:fade .25s ease-out}
+        .n{position:fixed;left:50%;top:50%;width:190px;height:190px;margin:-95px 0 0 -95px;border-radius:50%;
+           display:grid;place-items:center;background:rgba(15,23,42,.86);color:#fff;border:5px solid #ef4444;
+           box-shadow:0 20px 60px rgba(0,0,0,.45);font:800 104px/1 -apple-system,system-ui,sans-serif}
+        .a{animation:pop .95s ease-out}
+        @keyframes pop{0%{transform:scale(1.5);opacity:0}22%{transform:scale(1);opacity:1}80%{opacity:1}100%{transform:scale(.88);opacity:.35}}
+        @keyframes fade{from{opacity:0}}
+      </style><div class="bg"></div><div class="n"></div>`;
+      document.documentElement.append(host);
+      const el = root.querySelector('.n');
+      let n = 3;
+      const show = () => { el.textContent = n; el.classList.remove('a'); void el.offsetWidth; el.classList.add('a'); };
+      show();
+      const iv = setInterval(() => { if (--n > 0) show(); }, 1000);
+      setTimeout(() => { clearInterval(iv); host.remove(); }, 2900);
+    }
+  }).catch(() => {});
 }
 
 async function openLibrary() {

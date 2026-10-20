@@ -37,13 +37,21 @@
   </main>
 
   <main id="active" class="hidden">
-    <div class="status"><span class="dot"></span><span id="statusText"></span></div>
-    <div class="timer" id="timer">00:00</div>
-    <div class="controls">
-      <button class="btn" id="pauseBtn"></button>
-      <button class="btn primary" id="stopBtn"></button>
+    <div class="rec-card">
+      <div class="count" id="count" aria-live="polite"></div>
+      <div class="rec-info">
+        <span class="dot"></span>
+        <span class="rec-text"><small id="statusText"></small><b class="timer" id="timer">00:00</b></span>
+      </div>
+      <div class="rec-btns">
+        <button class="round" id="pauseBtn"></button>
+        <button class="round stop" id="stopBtn"></button>
+      </div>
     </div>
-    <button class="btn ghost small" id="cancelBtn" data-t="cancel"></button>
+    <div class="rec-foot">
+      <span class="muted" id="recMode"></span>
+      <button class="link" id="cancelBtn" data-t="cancel"></button>
+    </div>
   </main>
 
   <footer>

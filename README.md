@@ -26,7 +26,7 @@
 | **Two ways to record** | **This tab:** only the page, no browser bars. **Window / screen:** a Chrome window or the whole screen. |
 | **Full HD** | 720p, **1080p** or 4K at 30 or 60 fps. MP4 (H.264 + AAC) plays everywhere, WebM is optional. |
 | **Sound** | Tab sound or **PC sound** (music from other apps via "Share system audio"), plus any **microphone**: AirPods, headphones or the Mac mic. |
-| **Simple menu** | Click the icon to get the menu. Start, pause, stop. The timer shows right on the icon. No new tabs. |
+| **Simple menu** | Click the icon to get the menu. Start, pause, stop. A big 3-2-1 countdown on the page, and the timer shows right on the icon. No new tabs. |
 | **Your folder** | Saves to `Downloads/Recorder Chrome AppAlbania` or **any folder you choose**. |
 | **Recordings** | A gallery of your videos: play, rename, download, show in folder, delete. |
 | **Shortcut** | <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> starts and stops recording. You can change it. |
@@ -48,7 +48,7 @@
         <source media="(prefers-color-scheme: dark)" srcset="docs/popup-rec-dark.png">
         <img src="docs/popup-rec-light.png" width="340" alt="Recording">
       </picture>
-      <br><sub><b>Recording:</b> timer, pause, stop</sub>
+      <br><sub><b>Recording:</b> 3-2-1 countdown, timer, pause, stop</sub>
     </td>
   </tr>
 </table>

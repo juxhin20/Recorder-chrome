@@ -117,6 +117,7 @@ async function begin(settings) {
       send({ evt: 'tick', patch: { status: 'countdown', count: n } });
       await sleep(1000);
     }
+    await sleep(150);         // let the page overlay disappear before the first frame
     if (r.stopping) return;   // stop()/cancel() during countdown already finalized
   }
 
@@ -134,7 +135,7 @@ function elapsed() {
 function tick() {
   if (!rec) return;
   const status = rec.recorder.state === 'paused' ? 'paused' : 'recording';
-  send({ evt: 'tick', patch: { status, elapsed: elapsed() } });
+  send({ evt: 'tick', patch: { status, elapsed: elapsed(), at: Date.now() } });
 }
 
 function pause() {

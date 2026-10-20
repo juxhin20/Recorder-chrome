@@ -82,20 +82,54 @@ $('pauseBtn').onclick = async () => {
 $('stopBtn').onclick = () => send({ cmd: 'stop' });
 $('cancelBtn').onclick = () => send({ cmd: 'cancel' });
 
+$('stopBtn').innerHTML = ICON.stop;
+$('stopBtn').title = t('stop');
+let current = { status: 'idle' };
+let lastCount = null;
+
+function setPauseIcon(paused) {
+  if ($('pauseBtn').dataset.paused === String(paused)) return;   // don't rebuild on every tick (hover flicker)
+  $('pauseBtn').dataset.paused = String(paused);
+  $('pauseBtn').innerHTML = paused ? ICON.play : ICON.pause;
+  $('pauseBtn').title = t(paused ? 'resume' : 'pause');
+}
+
+// Timer runs locally between ticks so it counts smoothly instead of jumping.
+function liveElapsed() {
+  const s = current;
+  if (s.status !== 'recording') return s.elapsed || 0;
+  return (s.elapsed || 0) + Math.max(0, Date.now() - (s.at || Date.now()));
+}
+setInterval(() => {
+  if (current.status === 'recording' || current.status === 'paused') $('timer').textContent = fmtTime(liveElapsed());
+}, 200);
+
 function render(state = { status: 'idle' }) {
+  const wasActive = current.status !== 'idle';
+  current = state;
   const active = state.status !== 'idle';
-  $('idle').classList.toggle('hidden', active);
-  $('active').classList.toggle('hidden', !active);
-  if (!active) return;
+  if (active !== wasActive || !$('idle').dataset.ready) {
+    $('idle').dataset.ready = '1';
+    $('idle').classList.toggle('hidden', active);
+    $('active').classList.toggle('hidden', !active);
+  }
+  if (!active) { lastCount = null; return; }
 
   const paused = state.status === 'paused';
+  const counting = state.status === 'countdown';
   $('active').classList.toggle('paused', paused);
-  $('statusText').textContent = t({ countdown: 'countdown', paused: 'paused', saving: 'saving' }[state.status] || 'recording');
-  $('timer').textContent = state.status === 'countdown' ? String(state.count ?? 3) : fmtTime(state.elapsed || 0);
-  $('pauseBtn').innerHTML = (paused ? ICON.play : ICON.pause) + `<span>${t(paused ? 'resume' : 'pause')}</span>`;
-  $('stopBtn').innerHTML = ICON.stop + `<span>${t('stop')}</span>`;
-  const busy = state.status === 'saving' || state.status === 'countdown';
-  $('pauseBtn').disabled = busy;
+  $('active').classList.toggle('counting', counting);
+  $('statusText').textContent = t({ paused: 'paused', saving: 'saving' }[state.status] || 'recording');
+  $('recMode').textContent = t(state.mode === 'window' ? 'windowShort' : 'tabShort');
+  if (counting && state.count !== lastCount) {
+    lastCount = state.count;
+    const c = $('count');
+    c.textContent = String(state.count ?? 3);
+    c.classList.remove('tick'); void c.offsetWidth; c.classList.add('tick');
+  }
+  if (!counting) $('timer').textContent = fmtTime(liveElapsed());
+  setPauseIcon(paused);
+  $('pauseBtn').disabled = state.status !== 'recording' && !paused;
   $('stopBtn').disabled = state.status === 'saving';
   $('cancelBtn').classList.toggle('hidden', state.status === 'saving');
 }
