@@ -146,7 +146,8 @@ const T = {
     micDenied: 'Mikrofoni u refuzua. Lejoje te cilësimet e Chrome.',
     extras: 'Të tjera', countdownOpt: 'Numërim 3-2-1 para fillimit', openLib: 'Hap Regjistrimet pas ndalimit',
     language: 'Gjuha', auto: 'Automatike', changeShortcut: 'Ndrysho shkurtoren', saved: 'U ruajt',
-    notSupported: 'Ky format nuk mbështetet këtu, do përdoret WebM.'
+    notSupported: 'Ky format nuk mbështetet këtu, do përdoret WebM.',
+    captureTitle: 'Regjistrimi i dritares', captureSub: 'Mbaje këtë dritare hapur. Ndalo nga ikona e zgjerimit.'
   },
   en: {
     tab: 'Record this tab', tabSub: 'Current page only, with sound', tabShort: 'This tab', tabMini: 'Page only', windowMini: 'Or full screen',
@@ -173,7 +174,8 @@ const T = {
     micDenied: 'Microphone was blocked. Allow it in Chrome settings.',
     extras: 'Extras', countdownOpt: '3-2-1 countdown before start', openLib: 'Open Recordings after stopping',
     language: 'Language', auto: 'Automatic', changeShortcut: 'Change shortcut', saved: 'Saved',
-    notSupported: 'This format isn’t supported here, WebM will be used.'
+    notSupported: 'This format isn’t supported here, WebM will be used.',
+    captureTitle: 'Window recording', captureSub: 'Keep this window open. Stop from the extension icon.'
   }
 };
 

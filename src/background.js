@@ -16,9 +16,15 @@ async function ensureOffscreen() {
   });
 }
 
+// Closes whichever recorder page is running: the offscreen document (tab) or the capture window.
 async function closeOffscreen() {
   const has = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
   if (has.length) await chrome.offscreen.closeDocument().catch(() => {});
+  const { captureWin } = await chrome.storage.session.get('captureWin');
+  if (captureWin) {
+    await chrome.storage.session.remove('captureWin');
+    await chrome.windows.remove(captureWin).catch(() => {});
+  }
 }
 
 const toOffscreen = msg => chrome.runtime.sendMessage({ target: 'offscreen', ...msg });
@@ -68,26 +74,58 @@ async function start(mode, tabId) {
     canAudio = true;
     overlayTab = tab.id;
   } else {
-    const res = await new Promise(resolve => {
-      chrome.desktopCapture.chooseDesktopMedia(['window', 'screen', 'audio'], (id, opts) => resolve({ id, opts }));
-    });
+    overlayTab = (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id;
+    const res = await openCaptureWindow();
     if (!res.id) return { ok: false, error: 'cancelled' };
     streamId = res.id;
-    canAudio = !!res.opts?.canRequestAudioTrack;
-    overlayTab = (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id;
+    canAudio = res.canAudio;
   }
 
   await update({ status: settings.countdown ? 'countdown' : 'recording', mode, elapsed: 0, count: 3, tabId: mode === 'tab' ? overlayTab : null });
-  await ensureOffscreen();
+  if (mode === 'tab') await ensureOffscreen();
   const r = await toOffscreen({ cmd: 'record', mode, streamId, canAudio, settings });
   if (!r?.ok) {
     await update({ status: 'idle' });
     await closeOffscreen();
-    return { ok: false, error: r?.error || 'Could not start recording' };
+    const error = r?.error || 'Could not start recording';
+    // The popup closed when the capture window opened, so keep the error for its next opening.
+    if (mode !== 'tab') await chrome.storage.session.set({ lastError: error });
+    return { ok: false, error };
+  }
+  if (mode !== 'tab') {
+    const { captureWin } = await chrome.storage.session.get('captureWin');
+    if (captureWin) chrome.windows.update(captureWin, { state: 'minimized' }).catch(() => {});
+    const tab = overlayTab && await chrome.tabs.get(overlayTab).catch(() => null);
+    if (tab) chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
   }
   if (settings.countdown && overlayTab) showCountdown(overlayTab);
   return { ok: true };
 }
+
+// ---------- window / screen capture page ----------
+
+const CAPTURE = 'src/capture.html';
+let picked = null;   // resolves with { id, canAudio } when the capture window answers
+
+async function openCaptureWindow() {
+  await closeOffscreen();
+  const answer = new Promise(resolve => { picked = resolve; });
+  const win = await chrome.windows.create({ url: CAPTURE, type: 'popup', width: 380, height: 240, focused: true });
+  await chrome.storage.session.set({ captureWin: win.id });
+  const res = await answer;
+  picked = null;
+  if (!res.id) await closeOffscreen();
+  return res;
+}
+
+chrome.windows.onRemoved.addListener(async winId => {
+  const { captureWin } = await chrome.storage.session.get('captureWin');
+  if (winId !== captureWin) return;
+  await chrome.storage.session.remove('captureWin');
+  picked?.({ id: '' });
+  const state = await getState();
+  if (state.status !== 'idle') await update({ status: 'idle' });
+});
 
 const capturable = tab => !!tab && !/^(chrome|edge|about|chrome-extension|devtools):/.test(tab.url || '')
   && !tab.url?.startsWith('https://chromewebstore.google.com');
@@ -201,6 +239,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         return toOffscreen({ cmd: msg.cmd });
       case 'state': return getState();
       case 'openLibrary': return openLibrary();
+      case 'picked': return picked?.(msg);
 
       // events from offscreen
       case 'tick': return update(msg.patch);
