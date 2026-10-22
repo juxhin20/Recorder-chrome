@@ -130,11 +130,11 @@ chrome.windows.onRemoved.addListener(async winId => {
 const capturable = tab => !!tab && !/^(chrome|edge|about|chrome-extension|devtools):/.test(tab.url || '')
   && !tab.url?.startsWith('https://chromewebstore.google.com');
 
-// Resume a paused tab recording. If the user moved to another tab, continue recording there.
-async function resume(tabId) {
+// Move a running or paused tab recording to another tab; the same video file continues.
+async function switchTo(tabId) {
   const state = await getState();
-  if (state.status !== 'paused') return { ok: false };
-  if (state.mode === 'tab' && tabId && tabId !== state.tabId) {
+  if (state.mode !== 'tab' || !['recording', 'paused'].includes(state.status)) return { ok: false };
+  if (tabId && tabId !== state.tabId) {
     const t = makeT(await getSettings());
     const tab = await chrome.tabs.get(tabId).catch(() => null);
     if (!capturable(tab)) return { ok: false, error: t('cantTab') };
@@ -147,6 +147,17 @@ async function resume(tabId) {
     const r = await toOffscreen({ cmd: 'switch', streamId });
     if (!r?.ok) return { ok: false, error: r?.error || 'Could not switch tab' };
     await update({ tabId });
+  }
+  return { ok: true };
+}
+
+// Resume a paused tab recording. If the user moved to another tab, continue recording there.
+async function resume(tabId) {
+  const state = await getState();
+  if (state.status !== 'paused') return { ok: false };
+  if (state.mode === 'tab') {
+    const r = await switchTo(tabId);
+    if (!r.ok) return r;
   }
   return toOffscreen({ cmd: 'resume' });
 }
@@ -235,6 +246,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     switch (msg.cmd || msg.evt) {
       case 'start': return start(msg.mode, msg.tabId);
       case 'resume': return resume(msg.tabId);
+      case 'switch': return switchTo(msg.tabId);
       case 'pause': case 'stop': case 'cancel':
         return toOffscreen({ cmd: msg.cmd });
       case 'state': return getState();

@@ -6,6 +6,6 @@ import './offscreen.js';
 
 applyT(makeT(await getSettings()));
 
-chrome.desktopCapture.chooseDesktopMedia(['window', 'screen', 'audio'], (id, opts) => {
+chrome.desktopCapture.chooseDesktopMedia(['tab', 'window', 'screen', 'audio'], (id, opts) => {
   chrome.runtime.sendMessage({ evt: 'picked', id: id || '', canAudio: !!opts?.canRequestAudioTrack }).catch(() => {});
 });

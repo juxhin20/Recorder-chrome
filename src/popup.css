@@ -90,3 +90,5 @@ footer {
 .where span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kbd { color: var(--muted); font-size: 11.5px; white-space: nowrap; border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
 .kbd:empty { display: none; }
+#switchBtn { width: 100%; gap: 8px; }
+#switchBtn svg { width: 16px; height: 16px; }

@@ -90,6 +90,14 @@ $('pauseBtn').onclick = async () => {
   if (res && res.ok === false && res.error) showError(res.error);
 };
 $('stopBtn').onclick = () => send({ cmd: 'stop' });
+
+// Recording a tab and the popup was opened on another tab: offer to continue the same video here.
+const [here] = await chrome.tabs.query({ active: true, currentWindow: true });
+$('switchBtn').onclick = async () => {
+  showError('');
+  const res = await send({ cmd: 'switch', tabId: here?.id });
+  if (res && res.ok === false && res.error) showError(res.error);
+};
 $('cancelBtn').onclick = () => send({ cmd: 'cancel' });
 
 $('stopBtn').innerHTML = ICON.stop;
@@ -139,6 +147,8 @@ function render(state = { status: 'idle' }) {
   }
   if (!counting) $('timer').textContent = fmtTime(liveElapsed());
   setPauseIcon(paused);
+  $('switchBtn').classList.toggle('hidden', !(state.mode === 'tab' && here && state.tabId && here.id !== state.tabId
+    && (state.status === 'recording' || paused)));
   $('pauseBtn').disabled = state.status !== 'recording' && !paused;
   $('stopBtn').disabled = state.status === 'saving';
   $('cancelBtn').classList.toggle('hidden', state.status === 'saving');
