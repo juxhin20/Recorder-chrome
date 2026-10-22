@@ -69,15 +69,25 @@ async function start(mode) {
   showError('');
   await ensureFolderAccess();
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const res = await send({ cmd: 'start', mode, tabId: tab?.id });
+  let res;
+  try {
+    res = await send({ cmd: 'start', mode, tabId: tab?.id });
+  } catch (e) {
+    res = { ok: false, error: e.message };
+  }
   if (!res?.ok && res?.error !== 'cancelled' && res?.error !== 'busy') showError(res?.error || 'Error');
 }
 
 $('recTab').onclick = () => start('tab');
 $('recWin').onclick = () => start('window');
 $('pauseBtn').onclick = async () => {
+  showError('');
   const s = await send({ cmd: 'state' });
-  send({ cmd: s.status === 'paused' ? 'resume' : 'pause' });
+  if (s.status !== 'paused') return send({ cmd: 'pause' });
+  // Resuming from another tab continues the recording on that tab.
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const res = await send({ cmd: 'resume', tabId: tab?.id });
+  if (res && res.ok === false && res.error) showError(res.error);
 };
 $('stopBtn').onclick = () => send({ cmd: 'stop' });
 $('cancelBtn').onclick = () => send({ cmd: 'cancel' });

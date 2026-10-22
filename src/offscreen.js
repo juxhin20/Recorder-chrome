@@ -29,11 +29,9 @@ async function openWriter(name) {
   return { where: 'library', dir, fh, w: await fh.createWritable() };
 }
 
-async function prepare({ mode, streamId, canAudio, settings }) {
+async function capture(mode, streamId, wantSourceAudio, settings) {
   const q = QUALITY[settings.quality] || QUALITY['1080'];
   const source = mode === 'tab' ? 'tab' : 'desktop';
-  const wantSourceAudio = settings.tabAudio && canAudio;
-
   const video = {
     mandatory: {
       chromeMediaSource: source,
@@ -44,13 +42,53 @@ async function prepare({ mode, streamId, canAudio, settings }) {
     }
   };
   const audio = { mandatory: { chromeMediaSource: source, chromeMediaSourceId: streamId } };
-  let media;
   try {
-    media = await navigator.mediaDevices.getUserMedia({ audio: wantSourceAudio ? audio : false, video });
+    return await navigator.mediaDevices.getUserMedia({ audio: wantSourceAudio ? audio : false, video });
   } catch (err) {
     if (!wantSourceAudio || mode === 'tab') throw err;
-    media = await navigator.mediaDevices.getUserMedia({ audio: false, video });   // system audio unavailable here
+    return navigator.mediaDevices.getUserMedia({ audio: false, video });   // system audio unavailable here
   }
+}
+
+// The recorder never sees the captured track directly: frames are copied into one generator
+// track, so a paused tab recording can continue on another tab (new capture, same video file).
+function attachSource(r, media) {
+  const old = r.source;
+  const src = { media, audio: null, reader: null };
+  r.source = src;
+
+  const [track] = media.getVideoTracks();
+  // User pressed Chrome's "Stop sharing" or closed the tab that is being recorded.
+  track.addEventListener('ended', () => { if (r.source === src) stop(); });
+  src.reader = new MediaStreamTrackProcessor({ track }).readable.getReader();
+  (async () => {
+    for (;;) {
+      const { value: frame, done } = await src.reader.read().catch(() => ({ done: true }));
+      if (done) return;
+      if (r.source !== src) { frame.close(); return; }
+      await r.frames.write(frame).catch(() => frame.close());
+    }
+  })();
+
+  if (media.getAudioTracks().length) {
+    src.audio = r.ctx.createMediaStreamSource(new MediaStream(media.getAudioTracks()));
+    src.audio.connect(r.mixed);
+    if (r.mode === 'tab') src.audio.connect(r.ctx.destination);
+  }
+
+  if (old) detachSource(old);
+}
+
+function detachSource(src) {
+  src.reader?.cancel().catch(() => {});
+  src.audio?.disconnect();
+  src.media.getTracks().forEach(t => t.stop());
+}
+
+async function prepare({ mode, streamId, canAudio, settings }) {
+  const q = QUALITY[settings.quality] || QUALITY['1080'];
+  const wantSourceAudio = settings.tabAudio && canAudio;
+  const media = await capture(mode, streamId, wantSourceAudio, settings);
 
   let mic = null;
   if (settings.micId) {
@@ -67,19 +105,12 @@ async function prepare({ mode, streamId, canAudio, settings }) {
   // Mix audio. Tab capture mutes the tab, so play its sound back to the speakers.
   const ctx = new AudioContext();
   const mixed = ctx.createMediaStreamDestination();
-  let hasAudio = false;
-  if (media.getAudioTracks().length) {
-    const src = ctx.createMediaStreamSource(new MediaStream(media.getAudioTracks()));
-    src.connect(mixed);
-    if (mode === 'tab') src.connect(ctx.destination);
-    hasAudio = true;
-  }
-  if (mic) {
-    ctx.createMediaStreamSource(mic).connect(mixed);
-    hasAudio = true;
-  }
+  // Tab mode keeps an audio track even when the tab is silent, so a later tab can bring sound.
+  const hasAudio = !!(mic || media.getAudioTracks().length || (mode === 'tab' && wantSourceAudio));
+  if (mic) ctx.createMediaStreamSource(mic).connect(mixed);
 
-  const tracks = [...media.getVideoTracks(), ...(hasAudio ? mixed.stream.getAudioTracks() : [])];
+  const generator = new MediaStreamTrackGenerator({ kind: 'video' });
+  const tracks = [generator, ...(hasAudio ? mixed.stream.getAudioTracks() : [])];
   const stream = new MediaStream(tracks);
   const mimeType = pickMime(settings.format, hasAudio);
   const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
@@ -93,10 +124,12 @@ async function prepare({ mode, streamId, canAudio, settings }) {
   });
 
   rec = {
-    mode, name, writer, recorder, media, mic, ctx, ext,
+    mode, name, writer, recorder, mic, ctx, mixed, ext, settings, wantSourceAudio,
+    generator, frames: generator.writable.getWriter(), source: null,
     chain: Promise.resolve(), bytes: 0,
     activeMs: 0, lastStart: 0, cancelled: false, timer: null, stopping: false
   };
+  attachSource(rec, media);
 
   recorder.ondataavailable = e => {
     if (!e.data.size || rec.cancelled) return;
@@ -104,9 +137,16 @@ async function prepare({ mode, streamId, canAudio, settings }) {
     rec.chain = rec.chain.then(() => writer.w.write(e.data));
   };
   recorder.onstop = () => finalize().catch(err => fail(err));
+}
 
-  // User pressed Chrome's "Stop sharing" or closed the tab.
-  media.getVideoTracks()[0].addEventListener('ended', () => stop());
+// Paused on one tab, resumed on another: capture the new tab and keep writing the same file.
+async function switchTab(streamId) {
+  const r = rec;
+  if (!r || r.mode !== 'tab' || r.stopping) return { ok: false, error: 'not recording' };
+  const media = await capture('tab', streamId, r.wantSourceAudio, r.settings);
+  if (rec !== r || r.stopping) { media.getTracks().forEach(t => t.stop()); return { ok: false, error: 'stopped' }; }
+  attachSource(r, media);
+  return { ok: true };
 }
 
 async function begin(settings) {
@@ -168,7 +208,10 @@ function cancel() {
 
 function release() {
   clearInterval(rec.timer);
-  rec.media.getTracks().forEach(t => t.stop());
+  const src = rec.source;
+  rec.source = null;
+  if (src) detachSource(src);
+  rec.generator.stop();
   rec.mic?.getTracks().forEach(t => t.stop());
   rec.ctx.close().catch(() => {});
 }
@@ -227,6 +270,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
         reply({ ok: true });
         begin(msg.settings).catch(fail);
       })();
+      return true;
+    case 'switch':
+      switchTab(msg.streamId).then(reply, err => reply({ ok: false, error: String(err?.message || err) }));
       return true;
     case 'pause': pause(); break;
     case 'resume': resume(); break;

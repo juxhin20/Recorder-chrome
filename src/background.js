@@ -59,9 +59,7 @@ async function start(mode, tabId) {
   let streamId, canAudio = false, overlayTab = null;
   if (mode === 'tab') {
     const tab = tabId ? await chrome.tabs.get(tabId) : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
-    if (!tab || /^(chrome|edge|about|chrome-extension|devtools):/.test(tab.url || '') || tab.url?.startsWith('https://chromewebstore.google.com')) {
-      return { ok: false, error: t('cantTab') };
-    }
+    if (!capturable(tab)) return { ok: false, error: t('cantTab') };
     try {
       streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
     } catch (e) {
@@ -79,7 +77,7 @@ async function start(mode, tabId) {
     overlayTab = (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id;
   }
 
-  await update({ status: settings.countdown ? 'countdown' : 'recording', mode, elapsed: 0, count: 3 });
+  await update({ status: settings.countdown ? 'countdown' : 'recording', mode, elapsed: 0, count: 3, tabId: mode === 'tab' ? overlayTab : null });
   await ensureOffscreen();
   const r = await toOffscreen({ cmd: 'record', mode, streamId, canAudio, settings });
   if (!r?.ok) {
@@ -89,6 +87,30 @@ async function start(mode, tabId) {
   }
   if (settings.countdown && overlayTab) showCountdown(overlayTab);
   return { ok: true };
+}
+
+const capturable = tab => !!tab && !/^(chrome|edge|about|chrome-extension|devtools):/.test(tab.url || '')
+  && !tab.url?.startsWith('https://chromewebstore.google.com');
+
+// Resume a paused tab recording. If the user moved to another tab, continue recording there.
+async function resume(tabId) {
+  const state = await getState();
+  if (state.status !== 'paused') return { ok: false };
+  if (state.mode === 'tab' && tabId && tabId !== state.tabId) {
+    const t = makeT(await getSettings());
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    if (!capturable(tab)) return { ok: false, error: t('cantTab') };
+    let streamId;
+    try {
+      streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+    const r = await toOffscreen({ cmd: 'switch', streamId });
+    if (!r?.ok) return { ok: false, error: r?.error || 'Could not switch tab' };
+    await update({ tabId });
+  }
+  return toOffscreen({ cmd: 'resume' });
 }
 
 // Big 3-2-1 in the middle of the page. It removes itself just before recording starts,
@@ -174,7 +196,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   (async () => {
     switch (msg.cmd || msg.evt) {
       case 'start': return start(msg.mode, msg.tabId);
-      case 'pause': case 'resume': case 'stop': case 'cancel':
+      case 'resume': return resume(msg.tabId);
+      case 'pause': case 'stop': case 'cancel':
         return toOffscreen({ cmd: msg.cmd });
       case 'state': return getState();
       case 'openLibrary': return openLibrary();

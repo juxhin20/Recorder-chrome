@@ -35,7 +35,7 @@ main { padding: 4px 14px 12px; display: grid; gap: 10px; }
   outline: none; cursor: pointer; text-overflow: ellipsis;
 }
 .mic-pick:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
-.err { margin: 0; color: var(--accent); font-size: 12.5px; }
+.err { margin: -4px 14px 10px; color: var(--accent); font-size: 12.5px; }
 
 main { animation: view-in .22s ease-out; }
 @keyframes view-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
