@@ -135,8 +135,8 @@ const T = {
     confirmDel: 'Ta fshij këtë video?', newName: 'Emri i ri',
     folderLocked: 'Chrome kërkon leje sërish për dosjen.', grant: 'Lejo qasjen', refresh: 'Rifresko',
     // settings
-    setTitle: 'Cilësimet', folder: 'Dosja e ruajtjes', folderHint: 'Videot ruhen këtu dhe shfaqen te Regjistrimet.',
-    choose: 'Zgjidh dosjen', useDownloads: 'Përdor Shkarkime', defaultFolder: 'Shkarkime / Recorder Chrome AppAlbania',
+    setTitle: 'Cilësimet', folder: 'Dosja e ruajtjes', folderHint: 'Videot ruhen këtu, fotot e ekranit te Screenshots/.',
+    choose: 'Zgjidh dosjen', changeFolder: 'Ndrysho dosjen', useDownloads: 'Përdor Shkarkime', defaultFolder: 'Shkarkime / Recorder Chrome AppAlbania',
     video: 'Video', quality: 'Cilësia', fps: 'Kuadro për sekondë', format: 'Formati',
     mp4Hint: 'Luhet kudo', webmHint: 'Më i lehtë për Chrome',
     audio: 'Zëri', tabAudio: 'Zëri i kompjuterit / tab-it', mic: 'Mikrofoni', micAllow: 'Lejo mikrofonin', micOk: 'Mikrofoni lejohet',
@@ -147,7 +147,14 @@ const T = {
     extras: 'Të tjera', countdownOpt: 'Numërim 3-2-1 para fillimit', openLib: 'Hap Regjistrimet pas ndalimit',
     language: 'Gjuha', auto: 'Automatike', changeShortcut: 'Ndrysho shkurtoren', saved: 'U ruajt',
     notSupported: 'Ky format nuk mbështetet këtu, do përdoret WebM.',
-    switchHere: 'Vazhdo regjistrimin këtu', captureTitle: 'Regjistrimi i dritares', captureSub: 'Mbaje këtë dritare hapur. Ndalo nga ikona e zgjerimit.'
+    switchHere: 'Vazhdo regjistrimin këtu', captureTitle: 'Regjistrimi i dritares', captureSub: 'Mbaje këtë dritare hapur. Ndalo nga ikona e zgjerimit.',
+    shotShort: 'Foto ekrani', shotMini: 'Zonë, faqe, e plotë',
+    shotArea: 'Zgjidh zonën', shotVisible: 'Ekrani', shotFull: 'Gjithë faqja',
+    shotHint: 'Tërhiq për të zgjedhur zonën · Esc për të dalë',
+    pen: 'Laps', line: 'Vijë', arrow: 'Shigjetë', rect: 'Katror', marker: 'Theksues', text: 'Tekst', color: 'Ngjyra', undo: 'Zhbëj (⌘Z)',
+    copy: 'Kopjo', save: 'Ruaj', pdf: 'Ruaj si PDF (faqe A4)', copyKey: 'Kopjo (⌘C)', saveKey: 'Ruaj (⌘S)', close: 'Mbyll (Esc)',
+    copied: 'U kopjua', saved: 'U ruajt te Screenshots', copyFail: 'Kjo faqe nuk lejon kopjimin. Përdor Ruaj.',
+    shotGone: 'Fotoja nuk u gjet. Provo sërish nga ikona e zgjerimit.', shotBusy: 'Ndalo regjistrimin para fotos së gjithë faqes.'
   },
   en: {
     tab: 'Record this tab', tabSub: 'Current page only, with sound', tabShort: 'This tab', tabMini: 'Page only', windowMini: 'Or full screen',
@@ -163,8 +170,8 @@ const T = {
     play: 'Play', rename: 'Rename', del: 'Delete', showFolder: 'Show in folder', download: 'Download',
     confirmDel: 'Delete this video?', newName: 'New name',
     folderLocked: 'Chrome needs permission for the folder again.', grant: 'Allow access', refresh: 'Refresh',
-    setTitle: 'Settings', folder: 'Save folder', folderHint: 'Videos are saved here and shown in Recordings.',
-    choose: 'Choose folder', useDownloads: 'Use Downloads', defaultFolder: 'Downloads / Recorder Chrome AppAlbania',
+    setTitle: 'Settings', folder: 'Save folder', folderHint: 'Videos are saved here, screenshots in Screenshots/.',
+    choose: 'Choose folder', changeFolder: 'Change folder', useDownloads: 'Use Downloads', defaultFolder: 'Downloads / Recorder Chrome AppAlbania',
     video: 'Video', quality: 'Quality', fps: 'Frames per second', format: 'Format',
     mp4Hint: 'Plays everywhere', webmHint: 'Lighter for Chrome',
     audio: 'Audio', tabAudio: 'PC / tab sound', mic: 'Microphone', micAllow: 'Allow microphone', micOk: 'Microphone allowed',
@@ -175,9 +182,22 @@ const T = {
     extras: 'Extras', countdownOpt: '3-2-1 countdown before start', openLib: 'Open Recordings after stopping',
     language: 'Language', auto: 'Automatic', changeShortcut: 'Change shortcut', saved: 'Saved',
     notSupported: 'This format isn’t supported here, WebM will be used.',
-    switchHere: 'Continue on this tab', captureTitle: 'Window recording', captureSub: 'Keep this window open. Stop from the extension icon.'
+    switchHere: 'Continue on this tab', captureTitle: 'Window recording', captureSub: 'Keep this window open. Stop from the extension icon.',
+    shotShort: 'Screenshot', shotMini: 'Area, page, full',
+    shotArea: 'Select area', shotVisible: 'Visible page', shotFull: 'Full page',
+    shotHint: 'Drag to select an area · Esc to exit',
+    pen: 'Pen', line: 'Line', arrow: 'Arrow', rect: 'Rectangle', marker: 'Marker', text: 'Text', color: 'Color', undo: 'Undo (⌘Z)',
+    copy: 'Copy', save: 'Save', pdf: 'Save as PDF (A4 pages)', copyKey: 'Copy (⌘C)', saveKey: 'Save (⌘S)', close: 'Close (Esc)',
+    copied: 'Copied', saved: 'Saved to Screenshots', copyFail: 'This page blocks copying. Use Save.',
+    shotGone: 'Screenshot not found. Try again from the extension icon.', shotBusy: 'Stop the recording before a full-page screenshot.'
   }
 };
+
+// Text the screenshot editor needs (it runs inside web pages, without shared.js).
+export function snipLabels(t) {
+  const keys = ['pen', 'line', 'arrow', 'rect', 'marker', 'text', 'color', 'undo', 'copy', 'save', 'pdf', 'copyKey', 'saveKey', 'close', 'copied', 'saved', 'copyFail'];
+  return { ...Object.fromEntries(keys.map(k => [k, t(k)])), hint: t('shotHint') };
+}
 
 export function langOf(s) {
   if (s.lang === 'sq' || s.lang === 'en') return s.lang;
@@ -213,5 +233,8 @@ export const ICON = {
   lock: '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   mic: '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
   speaker: '<svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+  crop: '<svg viewBox="0 0 24 24"><path d="M7 3v14h14"/><path d="M3 7h14v14"/></svg>',
+  page: '<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
+  camera: '<svg viewBox="0 0 24 24"><path d="M3.5 8.5A2 2 0 0 1 5.5 6.5h2.2l1.6-2h5.4l1.6 2h2.2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   refresh: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>'
 };

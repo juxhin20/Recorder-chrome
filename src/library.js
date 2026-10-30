@@ -97,9 +97,7 @@ async function render() {
     tools.append(button('play', t('play'), () => openPlayer(it.name, url)));
     if (it.source === 'folder') tools.append(button('pencil', t('rename'), () => rename(it, meta)));
     const dlId = downloadIds[it.name];
-    if (it.source === 'library' && dlId) {
-      tools.append(button('folder', t('showFolder'), () => chrome.downloads.show(dlId)));
-    }
+    if (it.source === 'library') tools.append(button('folder', t('showFolder'), () => reveal(it.name, dlId)));
     tools.append(button('download', t('download'), () => {
       const a = Object.assign(document.createElement('a'), { href: url, download: it.name });
       a.click();
@@ -109,6 +107,19 @@ async function render() {
     card.append(thumb, info, tools);
     grid.append(card);
   }
+}
+
+// Selects the video in Finder / Explorer. Falls back to a filename search, then to the Downloads folder.
+async function reveal(name, dlId) {
+  const found = (dlId && await chrome.downloads.search({ id: dlId })) || [];
+  let item = found.find(d => d.exists && d.state === 'complete');
+  if (!item) {
+    const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const all = await chrome.downloads.search({ filenameRegex: `${esc}$`, state: 'complete', exists: true });
+    item = all[0];
+  }
+  if (item) chrome.downloads.show(item.id);
+  else chrome.downloads.showDefaultFolder();
 }
 
 function openPlayer(name, url) {

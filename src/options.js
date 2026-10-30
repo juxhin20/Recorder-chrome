@@ -1,4 +1,4 @@
-import { getSettings, saveSettings, makeT, applyT, ICON, getFolder, setFolder, clearFolder, folderState, fillMicSelect, listMics } from './shared.js';
+import { getSettings, saveSettings, makeT, applyT, ICON, getFolder, setFolder, clearFolder, folderState, fillMicSelect, listMics, DOWNLOAD_SUBFOLDER } from './shared.js';
 
 const $ = id => document.getElementById(id);
 let settings = await getSettings();
@@ -30,11 +30,18 @@ async function renderFolder() {
   $('folderNote').textContent = !folder ? '' : state === 'granted' ? '' : t('folderLocked');
   $('grant').classList.toggle('hidden', state !== 'prompt');
   $('useDownloads').classList.toggle('hidden', !folder);
+  $('chooseText').textContent = t(folder ? 'changeFolder' : 'choose');
+  $('folderRow').title = t(folder ? 'changeFolder' : 'choose');
 }
 
+$('folderRow').onclick = e => { if (!e.target.closest('#choose')) $('choose').click(); };
 $('choose').onclick = async () => {
   try {
-    const handle = await window.showDirectoryPicker({ id: 'recorder', mode: 'readwrite', startIn: 'downloads' });
+    let handle = await window.showDirectoryPicker({ id: 'recorder-docs', mode: 'readwrite', startIn: 'documents' });
+    // Picking Documents (or another home folder) keeps things tidy in Documents/Recorder Chrome AppAlbania.
+    if (/^(documents|desktop|downloads|movies|pictures|videos|dokumente|documenti)$/i.test(handle.name)) {
+      handle = await handle.getDirectoryHandle(DOWNLOAD_SUBFOLDER, { create: true });
+    }
     await setFolder(handle);
     await renderFolder();
     toast(t('saved'));

@@ -5,7 +5,7 @@
 <h1 align="center">Recorder Chrome AppAlbania</h1>
 
 <p align="center">
-  Record a tab, a Chrome window or your whole screen in <b>Full HD</b>, with PC sound and your headphones mic.<br>
+  Record a tab in <b>Full HD</b> with sound and your headphones mic, and take screenshots you can draw on.<br>
   Simple, private, no account, everything stays on your computer.
 </p>
 
@@ -23,13 +23,14 @@
 
 | | |
 |---|---|
-| **Two ways to record** | **This tab:** only the page, no browser bars. **Window / screen:** a Chrome window or the whole screen. |
+| **Record a tab** | Only the page, no browser bars. Pause on one tab and continue on another, all in one video. |
+| **Screenshots** | **Select area**, **Visible page** or **Full page** (scrolls and stitches). Draw with pen, line, arrow, rectangle, marker and text in any color, then **Copy**, **Save** (PNG) or **PDF** (A4 pages). Files are named with the site and date, e.g. `Screenshot example.com 2026-10-30_12-31-05.png`. |
 | **Full HD** | 720p, **1080p** or 4K at 30 or 60 fps. MP4 (H.264 + AAC) plays everywhere, WebM is optional. |
-| **Sound** | Tab sound or **PC sound** (music from other apps via "Share system audio"), plus any **microphone**: AirPods, headphones or the Mac mic. |
+| **Sound** | Tab sound plus any **microphone**: AirPods, headphones or the Mac mic. |
 | **Simple menu** | Click the icon to get the menu. Start, pause, stop. A big 3-2-1 countdown on the page, and the timer shows right on the icon. No new tabs. |
-| **Your folder** | Saves to `Downloads/Recorder Chrome AppAlbania` or **any folder you choose**. |
+| **Your folder** | Saves to `Downloads/Recorder Chrome AppAlbania` or **any folder you choose** (picking *Documents* creates `Documents/Recorder Chrome AppAlbania`). Screenshots go in its `Screenshots/` folder. |
 | **Recordings** | A gallery of your videos: play, rename, download, show in folder, delete. |
-| **Shortcut** | <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> starts and stops recording. You can change it. |
+| **Shortcuts** | <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> starts and stops recording, <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> selects an area for a screenshot. In the editor: <kbd>⌘C</kbd> copy, <kbd>⌘S</kbd> save, <kbd>⌘Z</kbd> undo, <kbd>Esc</kbd> close. |
 | **Light & dark** | Follows your system theme. Albanian and English. |
 
 ## Screenshots
@@ -78,11 +79,10 @@
 ## How to use
 
 1. Click the extension icon.
-2. Pick **This tab** or **Window / screen**.
+2. Pick **This tab** to record, or **Screenshot** → *Select area*, *Visible page* or *Full page*.
 3. Turn **PC sound** on or off and choose a microphone (or *No microphone*).
 4. Press **Stop** when done. The video is saved and shows up in **Recordings**.
 
-> **PC music on Mac:** choose *Window / screen* and turn on **"Share system audio"** in Chrome's picker (Chrome 141+, macOS 14.2+).
 > **Microphone:** the first time you pick one, Settings asks for permission once.
 
 ## Privacy
@@ -95,8 +95,10 @@ Nothing is uploaded. Recordings are written straight to your disk. There are no 
 manifest.json
 icons/                 extension icons
 src/
-  background.js        start/stop, badge timer, downloads, shortcut
+  background.js        start/stop, badge timer, downloads, shortcuts, screenshots + full-page stitching
   offscreen.js         capture + MediaRecorder, writes 1 s chunks to disk
+  snip.js              screenshot editor (area select, drawing, copy/save), injected into the page
+  shot.*               full-page screenshot editor tab
   popup.*              toolbar menu
   library.*            Recordings page
   options.*            Settings page

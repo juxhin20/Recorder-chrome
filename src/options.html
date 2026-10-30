@@ -10,7 +10,7 @@
 </head>
 <body>
   <div class="topbar">
-    <div class="brand"><img src="../icons/icon48.png" alt=""><div>Recorder<small>Chrome AppAlbania</small></div></div>
+    <div class="brand"><img src="../icons/icon48.png" alt=""><div>Recorder &amp; Screenshot<small>Chrome AppAlbania</small></div></div>
     <nav>
       <a href="library.html" data-icon="film"><span data-t="recordings"></span></a>
       <a href="options.html" class="on" data-icon="gear"><span data-t="settings"></span></a>
@@ -23,12 +23,12 @@
     <section class="card">
       <h2 data-t="folder"></h2>
       <p class="muted" data-t="folderHint"></p>
-      <div class="folder-row">
+      <div class="folder-row" id="folderRow" title="">
         <span class="folder-ico" data-icon="folder"></span>
         <div class="grow"><b id="folderName"></b><small class="muted" id="folderNote"></small></div>
+        <button class="btn primary" id="choose" data-icon="folder"><span id="chooseText"></span></button>
       </div>
       <div class="row-btns">
-        <button class="btn primary" id="choose" data-icon="folder"><span data-t="choose"></span></button>
         <button class="btn" id="grant" data-icon="lock"><span data-t="grant"></span></button>
         <button class="btn ghost" id="useDownloads"><span data-t="useDownloads"></span></button>
       </div>

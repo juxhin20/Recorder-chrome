@@ -12,12 +12,9 @@ const send = msg => chrome.runtime.sendMessage(msg);
 // ---------- save location ----------
 
 let folder = await getFolder();
+// Footer only appears when Chrome needs the folder permission again.
 async function renderWhere() {
-  const state = await folderState(folder);
-  $('whereText').textContent = folder ? folder.name : t('defaultFolder');
-  $('where').title = `${t('savesTo')}: ${$('whereText').textContent}`;
-  $('grant').classList.toggle('hidden', state !== 'prompt');
-  $('where').classList.toggle('hidden', state === 'prompt');
+  $('foot').classList.toggle('hidden', (await folderState(folder)) !== 'prompt');
 }
 await renderWhere();
 
@@ -29,13 +26,9 @@ async function ensureFolderAccess() {
 }
 
 $('grant').onclick = ensureFolderAccess;
-$('where').onclick = () => chrome.runtime.openOptionsPage();
 $('openSet').onclick = () => chrome.runtime.openOptionsPage();
 $('openLib').onclick = () => send({ cmd: 'openLibrary' });
 
-const cmds = await chrome.commands.getAll();
-const shortcut = cmds.find(c => c.name === 'toggle-recording')?.shortcut;
-if (shortcut) { $('kbd').textContent = shortcut; $('kbd').title = t('shortcut'); }
 
 // ---------- audio ----------
 
@@ -79,7 +72,15 @@ async function start(mode) {
 }
 
 $('recTab').onclick = () => start('tab');
-$('recWin').onclick = () => start('window');
+
+// Screenshot: the editor opens on the page (or in a tab for full page).
+for (const [id, kind] of [['shotArea', 'area'], ['shotVisible', 'visible'], ['shotFull', 'full']]) {
+  $(id).onclick = async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    send({ cmd: 'shot', kind, tabId: tab?.id }).catch(() => {});
+    window.close();   // the popup must be gone before the page is captured
+  };
+}
 $('pauseBtn').onclick = async () => {
   showError('');
   const s = await send({ cmd: 'state' });
@@ -138,7 +139,7 @@ function render(state = { status: 'idle' }) {
   $('active').classList.toggle('paused', paused);
   $('active').classList.toggle('counting', counting);
   $('statusText').textContent = t({ paused: 'paused', saving: 'saving' }[state.status] || 'recording');
-  $('recMode').textContent = t(state.mode === 'window' ? 'windowShort' : 'tabShort');
+  $('recMode').textContent = t('tabShort');
   if (counting && state.count !== lastCount) {
     lastCount = state.count;
     const c = $('count');

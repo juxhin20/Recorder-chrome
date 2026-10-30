@@ -1,4 +1,4 @@
-import { getSettings, makeT, fmtTime, DOWNLOAD_SUBFOLDER } from './shared.js';
+import { getSettings, makeT, fmtTime, fileStamp, getFolder, folderState, snipLabels, DOWNLOAD_SUBFOLDER } from './shared.js';
 
 const OFFSCREEN = 'src/offscreen.html';
 const IDLE = { status: 'idle' };
@@ -12,19 +12,13 @@ async function ensureOffscreen() {
   await chrome.offscreen.createDocument({
     url: OFFSCREEN,
     reasons: ['USER_MEDIA', 'DISPLAY_MEDIA', 'BLOBS'],
-    justification: 'Record the selected tab or window with MediaRecorder'
+    justification: 'Record the selected tab with MediaRecorder'
   });
 }
 
-// Closes whichever recorder page is running: the offscreen document (tab) or the capture window.
 async function closeOffscreen() {
   const has = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
   if (has.length) await chrome.offscreen.closeDocument().catch(() => {});
-  const { captureWin } = await chrome.storage.session.get('captureWin');
-  if (captureWin) {
-    await chrome.storage.session.remove('captureWin');
-    await chrome.windows.remove(captureWin).catch(() => {});
-  }
 }
 
 const toOffscreen = msg => chrome.runtime.sendMessage({ target: 'offscreen', ...msg });
@@ -62,70 +56,158 @@ async function start(mode, tabId) {
   const settings = await getSettings();
   const t = makeT(settings);
 
-  let streamId, canAudio = false, overlayTab = null;
-  if (mode === 'tab') {
-    const tab = tabId ? await chrome.tabs.get(tabId) : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
-    if (!capturable(tab)) return { ok: false, error: t('cantTab') };
-    try {
-      streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
-    canAudio = true;
-    overlayTab = tab.id;
-  } else {
-    overlayTab = (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id;
-    const res = await openCaptureWindow();
-    if (!res.id) return { ok: false, error: 'cancelled' };
-    streamId = res.id;
-    canAudio = res.canAudio;
+  const tab = tabId ? await chrome.tabs.get(tabId) : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+  if (!capturable(tab)) return { ok: false, error: t('cantTab') };
+  let streamId;
+  try {
+    streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
+  } catch (e) {
+    return { ok: false, error: e.message };
   }
 
-  await update({ status: settings.countdown ? 'countdown' : 'recording', mode, elapsed: 0, count: 3, tabId: mode === 'tab' ? overlayTab : null });
-  if (mode === 'tab') await ensureOffscreen();
-  const r = await toOffscreen({ cmd: 'record', mode, streamId, canAudio, settings });
+  await update({ status: settings.countdown ? 'countdown' : 'recording', mode, elapsed: 0, count: 3, tabId: tab.id });
+  await ensureOffscreen();
+  const r = await toOffscreen({ cmd: 'record', mode, streamId, canAudio: true, settings });
   if (!r?.ok) {
     await update({ status: 'idle' });
     await closeOffscreen();
-    const error = r?.error || 'Could not start recording';
-    // The popup closed when the capture window opened, so keep the error for its next opening.
-    if (mode !== 'tab') await chrome.storage.session.set({ lastError: error });
-    return { ok: false, error };
+    return { ok: false, error: r?.error || 'Could not start recording' };
   }
-  if (mode !== 'tab') {
-    const { captureWin } = await chrome.storage.session.get('captureWin');
-    if (captureWin) chrome.windows.update(captureWin, { state: 'minimized' }).catch(() => {});
-    const tab = overlayTab && await chrome.tabs.get(overlayTab).catch(() => null);
-    if (tab) chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
-  }
-  if (settings.countdown && overlayTab) showCountdown(overlayTab);
+  if (settings.countdown) showCountdown(tab.id);
   return { ok: true };
 }
 
-// ---------- window / screen capture page ----------
+// ---------- screenshots ----------
 
-const CAPTURE = 'src/capture.html';
-let picked = null;   // resolves with { id, canAudio } when the capture window answers
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const MAX_SHOT_PX = 16000;   // tallest full-page image (device px); Chrome canvases stop around 32k
+let pendingShot = null;      // full-page image waiting for shot.html
+let lastCapture = 0;
 
-async function openCaptureWindow() {
-  await closeOffscreen();
-  const answer = new Promise(resolve => { picked = resolve; });
-  const win = await chrome.windows.create({ url: CAPTURE, type: 'popup', width: 380, height: 240, focused: true });
-  await chrome.storage.session.set({ captureWin: win.id });
-  const res = await answer;
-  picked = null;
-  if (!res.id) await closeOffscreen();
-  return res;
+// captureVisibleTab is limited to 2 calls a second.
+async function captureTab(windowId) {
+  await sleep(Math.max(0, 520 - (Date.now() - lastCapture)));
+  lastCapture = Date.now();
+  return chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
 }
 
-chrome.windows.onRemoved.addListener(async winId => {
-  const { captureWin } = await chrome.storage.session.get('captureWin');
-  if (winId !== captureWin) return;
-  await chrome.storage.session.remove('captureWin');
-  picked?.({ id: '' });
-  const state = await getState();
-  if (state.status !== 'idle') await update({ status: 'idle' });
-});
+const hostOf = url => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; } };
+
+async function shot(kind, tabId) {
+  const settings = await getSettings();
+  const t = makeT(settings);
+  const tab = tabId ? await chrome.tabs.get(tabId) : (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+  if (!tab) return { ok: false };
+  await chrome.storage.session.set({ shotHost: hostOf(tab.url) });
+  try {
+    if (kind === 'full') {
+      if (!capturable(tab)) throw new Error(t('cantTab'));
+      return openShotTab(await fullPage(tab));
+    }
+    await sleep(120);   // let the popup disappear first
+    const img = await captureTab(tab.windowId);
+    if (!capturable(tab)) return openShotTab(img);
+    try {
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['src/snip.js'] });
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (img, mode, labels) => window.__recSnip({ img, mode, labels }),
+        args: [img, kind, snipLabels(t)]
+      });
+    } catch {
+      return openShotTab(img);   // a page we can't draw on: edit it in our own tab instead
+    }
+    return { ok: true };
+  } catch (e) {
+    await chrome.storage.session.set({ lastError: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
+async function openShotTab(img) {
+  pendingShot = img;
+  await chrome.tabs.create({ url: chrome.runtime.getURL('src/shot.html') });
+  return { ok: true };
+}
+
+// Scrolls the page one screen at a time and stitches the captures together.
+async function fullPage(tab) {
+  const run = (func, args = []) => chrome.scripting.executeScript({ target: { tabId: tab.id }, func, args }).then(r => r[0]?.result);
+  const m = await run(() => {
+    const el = document.scrollingElement || document.documentElement;
+    const st = document.documentElement.style;
+    window.__recShot = { y: scrollY, sb: st.scrollBehavior, hidden: [] };
+    st.setProperty('scroll-behavior', 'auto', 'important');
+    return { vh: innerHeight, total: Math.max(el.scrollHeight, document.body?.scrollHeight || 0) };
+  });
+  const parts = [];
+  try {
+    let want = 0;
+    for (;;) {
+      // From the second screen on, hide fixed/sticky bars so they don't repeat down the image.
+      const y = await run((y, hide) => {
+        scrollTo(0, y);
+        if (hide && !window.__recShot.hid) {
+          window.__recShot.hid = true;
+          for (const el of document.querySelectorAll('body *')) {
+            const p = getComputedStyle(el).position;
+            if (p === 'fixed' || p === 'sticky') { window.__recShot.hidden.push([el, el.style.visibility]); el.style.setProperty('visibility', 'hidden', 'important'); }
+          }
+        }
+        return scrollY;
+      }, [want, parts.length > 0]);
+      await sleep(180);   // lazy images and repaint
+      const bmp = await createImageBitmap(await (await fetch(await captureTab(tab.windowId))).blob());
+      parts.push({ y, bmp });
+      const scale = bmp.height / m.vh;
+      if (y + m.vh >= m.total || y < want || (y + m.vh) * scale >= MAX_SHOT_PX) break;
+      want = y + m.vh;
+    }
+  } finally {
+    await run(() => {
+      const s = window.__recShot;
+      if (!s) return;
+      s.hidden.forEach(([el, v]) => { el.style.visibility = v; });
+      scrollTo(0, s.y);
+      document.documentElement.style.scrollBehavior = s.sb;
+      delete window.__recShot;
+    }).catch(() => {});
+  }
+
+  const scale = parts[0].bmp.height / m.vh;
+  const last = parts[parts.length - 1];
+  const height = Math.min(Math.round((last.y + m.vh) * scale), MAX_SHOT_PX);
+  const canvas = new OffscreenCanvas(parts[0].bmp.width, height);
+  const c = canvas.getContext('2d');
+  parts.forEach(p => c.drawImage(p.bmp, 0, Math.round(p.y * scale)));
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(fr.error);
+    fr.readAsDataURL(blob);
+  });
+}
+
+// Saves into the chosen folder's Screenshots/ or Downloads/Recorder Chrome AppAlbania/Screenshots/.
+async function saveShot(dataUrl, ext = 'png') {
+  const { shotHost } = await chrome.storage.session.get('shotHost');
+  const name = `Screenshot ${shotHost ? `${shotHost} ` : ''}${fileStamp()}.${ext === 'pdf' ? 'pdf' : 'png'}`.replace(/[\\/:*?"<>|]/g, '-');
+  const folder = await getFolder();
+  if (folder && (await folderState(folder)) === 'granted') {
+    try {
+      const dir = await folder.getDirectoryHandle('Screenshots', { create: true });
+      const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
+      await w.write(await (await fetch(dataUrl)).blob());
+      await w.close();
+      return { ok: true, name };
+    } catch (e) {
+      console.warn('Folder save failed, using Downloads:', e.message);
+    }
+  }
+  await chrome.downloads.download({ url: dataUrl, filename: `${DOWNLOAD_SUBFOLDER}/Screenshots/${name}`, conflictAction: 'uniquify', saveAs: false });
+  return { ok: true, name };
+}
 
 const capturable = tab => !!tab && !/^(chrome|edge|about|chrome-extension|devtools):/.test(tab.url || '')
   && !tab.url?.startsWith('https://chromewebstore.google.com');
@@ -251,7 +333,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         return toOffscreen({ cmd: msg.cmd });
       case 'state': return getState();
       case 'openLibrary': return openLibrary();
-      case 'picked': return picked?.(msg);
+      case 'shot': return shot(msg.kind, msg.tabId);
+      case 'takeShot': { const img = pendingShot; pendingShot = null; return { img }; }
+      case 'saveShot': return saveShot(msg.dataUrl, msg.ext);
 
       // events from offscreen
       case 'tick': return update(msg.patch);
@@ -274,6 +358,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 });
 
 chrome.commands.onCommand.addListener(async (command, tab) => {
+  if (command === 'take-screenshot') return shot('area', tab?.id);
   if (command !== 'toggle-recording') return;
   const state = await getState();
   if (state.status === 'idle') await start('tab', tab?.id);

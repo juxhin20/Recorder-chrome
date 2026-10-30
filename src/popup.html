@@ -10,7 +10,7 @@
   <header>
     <div class="brand">
       <img src="../icons/icon48.png" alt="">
-      <div>Recorder<small>Chrome AppAlbania</small></div>
+      <div>Recorder &amp; Screenshot<small>Chrome AppAlbania</small></div>
     </div>
     <div class="actions">
       <button class="icon-btn" id="openLib" data-icon="film" data-title="recordings"></button>
@@ -19,19 +19,19 @@
   </header>
 
   <main id="idle">
-    <div class="modes">
-      <button class="big" id="recTab">
-        <span class="ico" data-icon="tab"></span>
-        <span class="txt"><b data-t="tabShort"></b><small data-t="tabMini"></small></span>
-      </button>
-      <button class="big" id="recWin">
-        <span class="ico" data-icon="screen"></span>
-        <span class="txt"><b data-t="windowShort"></b><small data-t="windowMini"></small></span>
-      </button>
-    </div>
+    <button class="big" id="recTab">
+      <span class="ico" data-icon="tab"></span>
+      <span class="txt"><b data-t="tab"></b><small data-t="tabSub"></small></span>
+    </button>
     <div class="audio-row">
       <button class="chip" id="sndBtn" aria-pressed="true"><span data-icon="speaker"></span><span data-t="sound"></span></button>
       <label class="mic-pick"><span data-icon="mic"></span><select id="micSel" aria-label=""></select></label>
+    </div>
+    <h3 class="section-title"><span data-icon="camera"></span><span data-t="shotShort"></span></h3>
+    <div class="shot-row">
+      <button class="opt" id="shotArea"><span data-icon="crop"></span><span data-t="shotArea"></span></button>
+      <button class="opt" id="shotVisible"><span data-icon="screen"></span><span data-t="shotVisible"></span></button>
+      <button class="opt" id="shotFull"><span data-icon="page"></span><span data-t="shotFull"></span></button>
     </div>
   </main>
 
@@ -56,12 +56,8 @@
 
   <p class="err hidden" id="err"></p>
 
-  <footer>
-    <button class="where" id="where" title="">
-      <span data-icon="folder"></span><span id="whereText"></span>
-    </button>
-    <button class="btn primary small hidden" id="grant" data-t="needAccess"></button>
-    <span class="kbd" id="kbd"></span>
+  <footer id="foot" class="hidden">
+    <button class="btn primary small" id="grant" data-t="needAccess"></button>
   </footer>
   <script type="module" src="popup.js"></script>
 </body>
