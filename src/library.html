@@ -12,7 +12,7 @@
   <div class="topbar">
     <div class="brand"><img src="../icons/icon48.png" alt=""><div>Recorder &amp; Screenshot<small>Chrome AppAlbania</small></div></div>
     <nav>
-      <a href="library.html" class="on" data-icon="film"><span data-t="recordings"></span></a>
+      <a href="library.html" class="on" data-icon="film"><span data-t="gallery"></span></a>
       <a href="options.html" data-icon="gear"><span data-t="settings"></span></a>
     </nav>
   </div>
@@ -20,10 +20,19 @@
   <div class="wrap">
     <div class="lib-head">
       <div>
-        <h1 data-t="libTitle"></h1>
+        <h1 data-t="gallery"></h1>
         <p class="muted" id="summary"></p>
       </div>
-      <button class="btn" id="refresh" data-icon="refresh"><span data-t="refresh"></span></button>
+      <div class="lib-actions">
+        <label class="search" data-icon="search"><input type="search" id="q" autocomplete="off"></label>
+        <button class="btn" id="refresh" data-icon="refresh"><span data-t="refresh"></span></button>
+      </div>
+    </div>
+
+    <div class="kinds" id="kinds" role="group">
+      <button data-kind="all" data-t="all"></button>
+      <button data-kind="video" data-icon="film"><span data-t="recordings"></span></button>
+      <button data-kind="shot" data-icon="camera"><span data-t="shotsTitle"></span></button>
     </div>
 
     <div class="notice hidden" id="locked">
@@ -34,14 +43,16 @@
     <div class="grid" id="grid"></div>
     <div class="empty hidden" id="empty">
       <span data-icon="film"></span>
-      <b data-t="empty"></b>
-      <span data-t="emptySub"></span>
+      <b id="emptyTitle"></b>
+      <span id="emptySub"></span>
     </div>
+    <p class="empty hidden" id="noHits" data-t="noHits"></p>
   </div>
 
   <dialog id="player">
     <div class="bar"><b id="playerName"></b><button class="icon-btn" id="closePlayer" data-icon="close"></button></div>
     <video id="playerVideo" controls autoplay></video>
+    <img id="playerImg" class="hidden" alt="">
   </dialog>
 
   <script type="module" src="library.js"></script>

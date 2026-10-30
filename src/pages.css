@@ -57,6 +57,29 @@ h2 { font-size: 15px; margin: 0 0 4px; }
 .tools .icon-btn svg { width: 18px; height: 18px; }
 .tools .icon-btn.danger:hover { color: var(--accent); }
 
+.kinds { display: flex; gap: 6px; flex-wrap: wrap; margin: -4px 0 18px; }
+.kinds button {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-weight: 580; font-size: 13.5px;
+}
+.kinds button svg { width: 16px; height: 16px; }
+.kinds button:hover { color: var(--text); }
+.kinds button[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.lib-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.search {
+  display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 12px; border-radius: 10px; width: 260px; max-width: 100%;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+}
+.search:focus-within { border-color: var(--focus); }
+.search svg { width: 17px; height: 17px; }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; }
+.thumb.shot { background: var(--surface-2); overflow: hidden; }
+.thumb.shot img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.thumb .pdf { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 4px; color: var(--accent); }
+.thumb .pdf svg { width: 44px; height: 44px; }
+.thumb .pdf b { font-size: 13px; letter-spacing: .08em; }
+dialog img { display: block; max-width: 100%; max-height: 82vh; margin: 0 auto; background: #fff; }
+@media (max-width: 560px) { .lib-actions, .search { width: 100%; } .search { flex: 1; } }
 .empty { text-align: center; padding: 70px 20px; color: var(--muted); }
 .empty svg { width: 54px; height: 54px; color: var(--border); }
 .empty b { display: block; color: var(--text); font-size: 17px; margin: 10px 0 4px; }

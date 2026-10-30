@@ -29,7 +29,7 @@
 | **Sound** | Tab sound plus any **microphone**: AirPods, headphones or the Mac mic. |
 | **Simple menu** | Click the icon to get the menu. Start, pause, stop. A big 3-2-1 countdown on the page, and the timer shows right on the icon. No new tabs. |
 | **Your folder** | Saves to `Downloads/Recorder Chrome AppAlbania` or **any folder you choose** (picking *Documents* creates `Documents/Recorder Chrome AppAlbania`). Screenshots go in its `Screenshots/` folder. |
-| **Recordings** | A gallery of your videos: play, rename, download, show in folder, delete. |
+| **Gallery** | Videos and screenshots in one place, with **All / Recordings / Screenshots** filters and search by name, site or date. Play, view, rename, download, show in folder, delete. |
 | **Shortcuts** | <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> starts and stops recording, <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> selects an area for a screenshot. In the editor: <kbd>⌘C</kbd> copy, <kbd>⌘S</kbd> save, <kbd>⌘Z</kbd> undo, <kbd>Esc</kbd> close. |
 | **Light & dark** | Follows your system theme. Albanian and English. |
 

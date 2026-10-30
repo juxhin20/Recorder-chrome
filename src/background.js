@@ -196,20 +196,38 @@ async function saveShot(dataUrl, ext = 'png') {
   if (typeof dataUrl !== 'string' || !/^data:(image\/png|application\/pdf);base64,/.test(dataUrl)) return { ok: false, error: 'Invalid image' };
   const { shotHost } = await chrome.storage.session.get('shotHost');
   const name = `Screenshot ${shotHost ? `${shotHost} ` : ''}${fileStamp()}.${ext === 'pdf' ? 'pdf' : 'png'}`.replace(/[\\/:*?"<>|]/g, '-');
+  const blob = await (await fetch(dataUrl)).blob();
   const folder = await getFolder();
+  let saved = false;
   if (folder && (await folderState(folder)) === 'granted') {
     try {
-      const dir = await folder.getDirectoryHandle('Screenshots', { create: true });
-      const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
-      await w.write(await (await fetch(dataUrl)).blob());
-      await w.close();
-      return { ok: true, name };
+      await writeFile(await folder.getDirectoryHandle('Screenshots', { create: true }), name, blob);
+      saved = true;
     } catch (e) {
       console.warn('Folder save failed, using Downloads:', e.message);
     }
   }
-  await chrome.downloads.download({ url: dataUrl, filename: `${DOWNLOAD_SUBFOLDER}/Screenshots/${name}`, conflictAction: 'uniquify', saveAs: false });
+  if (!saved) {
+    const id = await chrome.downloads.download({ url: dataUrl, filename: `${DOWNLOAD_SUBFOLDER}/Screenshots/${name}`, conflictAction: 'uniquify', saveAs: false });
+    // Chrome can't read Downloads back, so the Screenshots page keeps its own copy (like recordings).
+    try {
+      const root = await navigator.storage.getDirectory();
+      await writeFile(await root.getDirectoryHandle('screenshots', { create: true }), name, blob);
+    } catch (e) {
+      console.warn('Library copy failed:', e.message);
+    }
+    const { downloadIds = {} } = await chrome.storage.local.get('downloadIds');
+    downloadIds[name] = id;
+    await chrome.storage.local.set({ downloadIds });
+  }
+  await saveMeta(name, { kind: 'shot', created: Date.now(), where: saved ? 'folder' : 'library' });
   return { ok: true, name };
+}
+
+async function writeFile(dir, name, blob) {
+  const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
+  await w.write(blob);
+  await w.close();
 }
 
 const capturable = tab => !!tab && !/^(chrome|edge|about|chrome-extension|devtools):/.test(tab.url || '')
