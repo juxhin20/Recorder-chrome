@@ -137,27 +137,29 @@ async function fullPage(tab) {
   // (headers, WordPress admin menu) are pinned to where they are at the top, so they show once.
   const m = await run(() => {
     const st = document.documentElement.style;
-    const s = window.__recShot = { y: scrollY, sb: st.scrollBehavior, moved: [] };
+    const s = window.__recShot = { y: scrollY, sb: st.scrollBehavior, moved: [], forced: [] };
+    // Pages like WordPress move their menu on every scroll; this puts our values back before each capture.
+    s.apply = () => s.forced.forEach(([el, props]) => {
+      for (const [k, v] of Object.entries(props)) el.style.setProperty(k, v, 'important');
+    });
     st.setProperty('scroll-behavior', 'auto', 'important');
     scrollTo(0, 0);
     const css = document.createElement('style');
     css.id = '__rec_shot_css';
-    css.textContent = '*, *::before, *::after { pointer-events: none !important; transition: none !important; caret-color: transparent !important; }';
+    css.textContent = '*, *::before, *::after { pointer-events: none !important; transition: none !important; caret-color: transparent !important; }'
+      + ' html { scrollbar-width: none !important; } html::-webkit-scrollbar { display: none !important; }';
     document.documentElement.append(css);
     for (const img of document.images) if (img.loading === 'lazy') img.loading = 'eager';
     for (const el of document.querySelectorAll('body *')) {
       const pos = getComputedStyle(el).position;
       if (pos !== 'fixed' && pos !== 'sticky') continue;
       s.moved.push([el, el.style.cssText]);
-      if (pos === 'sticky') { el.style.setProperty('position', 'relative', 'important'); continue; }
       const r = el.getBoundingClientRect();
-      el.style.setProperty('position', 'absolute', 'important');
-      el.style.setProperty('top', `${r.top}px`, 'important');
-      el.style.setProperty('left', `${r.left}px`, 'important');
-      el.style.setProperty('bottom', 'auto', 'important');
-      el.style.setProperty('right', 'auto', 'important');
-      el.style.setProperty('width', `${r.width}px`, 'important');
+      s.forced.push([el, pos === 'sticky' ? { position: 'relative', top: 'auto', bottom: 'auto' } : {
+        position: 'absolute', top: `${r.top}px`, left: `${r.left}px`, bottom: 'auto', right: 'auto', width: `${r.width}px`
+      }]);
     }
+    s.apply();
     return { vh: innerHeight, vw: innerWidth, cw: document.documentElement.clientWidth };
   });
   const parts = [];
@@ -176,10 +178,13 @@ async function fullPage(tab) {
           Promise.all(onScreen.map(img => new Promise(res => { img.addEventListener('load', res, { once: true }); img.addEventListener('error', res, { once: true }); }))),
           new Promise(res => setTimeout(res, 1500))
         ]);
+        await new Promise(res => requestAnimationFrame(() => setTimeout(res, 30)));   // let the page's own scroll handlers run
+        window.__recShot.apply();
+        await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
         const el = document.scrollingElement || document.documentElement;
         return { y: scrollY, total: Math.max(el.scrollHeight, document.body?.scrollHeight || 0) };
       }, [want]);
-      await sleep(120);   // repaint
+      await sleep(60);   // repaint
       const bmp = await createImageBitmap(await (await fetch(await captureTab(tab.windowId))).blob());
       parts.push({ y, bmp });
       const scale = bmp.height / m.vh;
@@ -193,6 +198,7 @@ async function fullPage(tab) {
       s.moved.forEach(([el, css]) => { el.style.cssText = css; });
       document.getElementById('__rec_shot_css')?.remove();
       scrollTo(0, s.y);
+      dispatchEvent(new Event('scroll'));   // let the page re-place its own bars
       document.documentElement.style.scrollBehavior = s.sb;
       delete window.__recShot;
     }).catch(() => {});
