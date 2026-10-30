@@ -431,26 +431,51 @@ window.__recSnip = function snip({ img, mode, labels: L }) {
     });
   }
 
+  // A small message that stays on the page after the editor is gone.
+  function flash(msg, err) {
+    const el = document.createElement('div');
+    const r = el.attachShadow({ mode: 'closed' });
+    r.innerHTML = `<style>div { position: fixed; left: 50%; bottom: 28px; z-index: 2147483647; transform: translateX(-50%); padding: 10px 16px;
+      border-radius: 10px; background: ${err ? '#b91c1c' : 'rgba(15, 23, 42, .92)'}; color: #fff; pointer-events: none;
+      font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; animation: in .18s ease-out; }
+      @keyframes in { from { opacity: 0; transform: translate(-50%, 6px); } }</style><div></div>`;
+    r.querySelector('div').textContent = msg;
+    document.documentElement.append(el);
+    setTimeout(() => el.remove(), 1800);
+  }
+
+  const toBlob = canvas => new Promise(res => canvas.toBlob(res, 'image/png'));
+  const toDataUrl = blob => new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(fr.error);
+    fr.readAsDataURL(blob);
+  });
+
+  // The editor disappears right away; encoding and saving happen after. On failure it comes back.
   let busy = false;
   async function finish(how) {
     if (!sel || busy) return;
     commitText();
     busy = true;
     const out = render();
+    // Start the clipboard write while the click still counts as a user action.
+    const copying = how === 'copy' && navigator.clipboard.write([new ClipboardItem({ 'image/png': toBlob(out) })]);
+    host.style.display = 'none';
     try {
-      if (how === 'copy') {
-        const blob = new Promise(res => out.toBlob(res, 'image/png'));
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        toast(L.copied);
+      if (copying) {
+        await copying;
+        flash(L.copied);
       } else {
-        const dataUrl = how === 'pdf' ? await toPdf(out) : out.toDataURL('image/png');
+        const dataUrl = how === 'pdf' ? await toPdf(out) : await toDataUrl(await toBlob(out));
         const r = await chrome.runtime.sendMessage({ cmd: 'saveShot', dataUrl, ext: how === 'pdf' ? 'pdf' : 'png' });
         if (!r?.ok) throw new Error(r?.error || 'Save failed');
-        toast(L.saved);
+        flash(L.saved);
       }
-      setTimeout(close, page ? 1400 : 700);
+      setTimeout(close, page ? 700 : 0);
     } catch (e) {
       busy = false;
+      host.style.display = '';
       toast(how === 'copy' ? L.copyFail : e.message, true);
     }
   }
