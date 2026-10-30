@@ -138,7 +138,7 @@ async function fullPage(tab) {
     const st = document.documentElement.style;
     window.__recShot = { y: scrollY, sb: st.scrollBehavior, hidden: [] };
     st.setProperty('scroll-behavior', 'auto', 'important');
-    return { vh: innerHeight, total: Math.max(el.scrollHeight, document.body?.scrollHeight || 0) };
+    return { vh: innerHeight, vw: innerWidth, cw: document.documentElement.clientWidth, total: Math.max(el.scrollHeight, document.body?.scrollHeight || 0) };
   });
   const parts = [];
   try {
@@ -177,7 +177,9 @@ async function fullPage(tab) {
   const scale = parts[0].bmp.height / m.vh;
   const last = parts[parts.length - 1];
   const height = Math.min(Math.round((last.y + m.vh) * scale), MAX_SHOT_PX);
-  const canvas = new OffscreenCanvas(parts[0].bmp.width, height);
+  // Leave out the page's scrollbar on the right.
+  const width = m.cw > 0 && m.cw < m.vw ? Math.round(m.cw * scale) : parts[0].bmp.width;
+  const canvas = new OffscreenCanvas(width, height);
   const c = canvas.getContext('2d');
   parts.forEach(p => c.drawImage(p.bmp, 0, Math.round(p.y * scale)));
   const blob = await canvas.convertToBlob({ type: 'image/png' });
@@ -191,6 +193,7 @@ async function fullPage(tab) {
 
 // Saves into the chosen folder's Screenshots/ or Downloads/Recorder Chrome AppAlbania/Screenshots/.
 async function saveShot(dataUrl, ext = 'png') {
+  if (typeof dataUrl !== 'string' || !/^data:(image\/png|application\/pdf);base64,/.test(dataUrl)) return { ok: false, error: 'Invalid image' };
   const { shotHost } = await chrome.storage.session.get('shotHost');
   const name = `Screenshot ${shotHost ? `${shotHost} ` : ''}${fileStamp()}.${ext === 'pdf' ? 'pdf' : 'png'}`.replace(/[\\/:*?"<>|]/g, '-');
   const folder = await getFolder();
@@ -322,8 +325,12 @@ async function finish() {
 
 // ---------- messages ----------
 
+// Messages from inside web pages (our injected editor) may only save a screenshot.
+const fromExtensionPage = sender => sender.id === chrome.runtime.id && sender.url?.startsWith(chrome.runtime.getURL(''));
+
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.target === 'offscreen') return;
+  if (sender.id !== chrome.runtime.id || (!fromExtensionPage(sender) && msg.cmd !== 'saveShot')) return;
   (async () => {
     switch (msg.cmd || msg.evt) {
       case 'start': return start(msg.mode, msg.tabId);

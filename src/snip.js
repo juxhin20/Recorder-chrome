@@ -205,16 +205,26 @@ window.__recSnip = function snip({ img, mode, labels: L }) {
       c.beginPath();
       s.pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
       c.stroke();
-    } else if (s.type === 'line' || s.type === 'arrow') {
+    } else if (s.type === 'line') {
       c.beginPath(); c.moveTo(s.x1, s.y1); c.lineTo(s.x2, s.y2); c.stroke();
-      if (s.type === 'arrow') {
-        const a = Math.atan2(s.y2 - s.y1, s.x2 - s.x1), len = 16;
-        c.beginPath();
-        c.moveTo(s.x2, s.y2);
-        c.lineTo(s.x2 - len * Math.cos(a - .45), s.y2 - len * Math.sin(a - .45));
-        c.lineTo(s.x2 - len * Math.cos(a + .45), s.y2 - len * Math.sin(a + .45));
-        c.closePath(); c.fill();
-      }
+    } else if (s.type === 'arrow') {
+      // One filled shape: thin tail, body widening to a sharp notched head.
+      const dx = s.x2 - s.x1, dy = s.y2 - s.y1, len = Math.hypot(dx, dy);
+      if (len < 2) { c.restore(); return; }
+      const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+      const head = Math.min(len * .5, 30), wing = head * .6, body = Math.min(4.5, 1.6 + len / 45), tail = 1;
+      const bx = s.x2 - ux * head * .72, by = s.y2 - uy * head * .72;   // where the body meets the notch
+      const hx = s.x2 - ux * head, hy = s.y2 - uy * head;               // back corners of the head
+      const pts = [
+        [s.x1 + nx * tail, s.y1 + ny * tail], [bx + nx * body, by + ny * body], [hx + nx * wing, hy + ny * wing],
+        [s.x2, s.y2],
+        [hx - nx * wing, hy - ny * wing], [bx - nx * body, by - ny * body], [s.x1 - nx * tail, s.y1 - ny * tail]
+      ];
+      c.beginPath();
+      pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
+      c.closePath();
+      c.shadowColor = 'rgba(0, 0, 0, .28)'; c.shadowBlur = 3; c.shadowOffsetY = 1;
+      c.lineWidth = 1; c.fill(); c.stroke();
     } else if (s.type === 'rect') {
       c.strokeRect(Math.min(s.x1, s.x2), Math.min(s.y1, s.y2), Math.abs(s.x2 - s.x1), Math.abs(s.y2 - s.y1));
     } else if (s.type === 'text') {
@@ -402,8 +412,9 @@ window.__recSnip = function snip({ img, mode, labels: L }) {
     obj(2, () => put(`<< /Type /Pages /Kids [${kids}] /Count ${n} >>`));
     pages.forEach((p, i) => {
       const pg = 3 + i * 3, im = pg + 1, ct = pg + 2;
-      const draw = `q ${PW.toFixed(2)} 0 0 ${p.ph.toFixed(2)} 0 ${(PH - p.ph).toFixed(2)} cm /Im0 Do Q`;
-      obj(pg, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${ct} 0 R >>`));
+      // Pages are A4; the last one is cut to its content so the PDF doesn't end in white.
+      const draw = `q ${PW.toFixed(2)} 0 0 ${p.ph.toFixed(2)} 0 0 cm /Im0 Do Q`;
+      obj(pg, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${p.ph.toFixed(2)}] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${ct} 0 R >>`));
       obj(im, () => { put(`<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>\nstream\n`); put(p.jpg); put('\nendstream'); });
       obj(ct, () => put(`<< /Length ${draw.length} >>\nstream\n${draw}\nendstream`));
     });
