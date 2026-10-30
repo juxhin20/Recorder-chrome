@@ -133,41 +133,65 @@ async function openShotTab(img) {
 // Scrolls the page one screen at a time and stitches the captures together.
 async function fullPage(tab) {
   const run = (func, args = []) => chrome.scripting.executeScript({ target: { tabId: tab.id }, func, args }).then(r => r[0]?.result);
+  // Prepare the page once: no hover effects, lazy images load now, and fixed/sticky bars
+  // (headers, WordPress admin menu) are pinned to where they are at the top, so they show once.
   const m = await run(() => {
-    const el = document.scrollingElement || document.documentElement;
     const st = document.documentElement.style;
-    window.__recShot = { y: scrollY, sb: st.scrollBehavior, hidden: [] };
+    const s = window.__recShot = { y: scrollY, sb: st.scrollBehavior, moved: [] };
     st.setProperty('scroll-behavior', 'auto', 'important');
-    return { vh: innerHeight, vw: innerWidth, cw: document.documentElement.clientWidth, total: Math.max(el.scrollHeight, document.body?.scrollHeight || 0) };
+    scrollTo(0, 0);
+    const css = document.createElement('style');
+    css.id = '__rec_shot_css';
+    css.textContent = '*, *::before, *::after { pointer-events: none !important; transition: none !important; caret-color: transparent !important; }';
+    document.documentElement.append(css);
+    for (const img of document.images) if (img.loading === 'lazy') img.loading = 'eager';
+    for (const el of document.querySelectorAll('body *')) {
+      const pos = getComputedStyle(el).position;
+      if (pos !== 'fixed' && pos !== 'sticky') continue;
+      s.moved.push([el, el.style.cssText]);
+      if (pos === 'sticky') { el.style.setProperty('position', 'relative', 'important'); continue; }
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('position', 'absolute', 'important');
+      el.style.setProperty('top', `${r.top}px`, 'important');
+      el.style.setProperty('left', `${r.left}px`, 'important');
+      el.style.setProperty('bottom', 'auto', 'important');
+      el.style.setProperty('right', 'auto', 'important');
+      el.style.setProperty('width', `${r.width}px`, 'important');
+    }
+    return { vh: innerHeight, vw: innerWidth, cw: document.documentElement.clientWidth };
   });
   const parts = [];
   try {
     let want = 0;
     for (;;) {
-      // From the second screen on, hide fixed/sticky bars so they don't repeat down the image.
-      const y = await run((y, hide) => {
+      // Scroll, then wait (max 1.5 s) for the images now on screen to finish loading.
+      const { y, total } = await run(async y => {
         scrollTo(0, y);
-        if (hide && !window.__recShot.hid) {
-          window.__recShot.hid = true;
-          for (const el of document.querySelectorAll('body *')) {
-            const p = getComputedStyle(el).position;
-            if (p === 'fixed' || p === 'sticky') { window.__recShot.hidden.push([el, el.style.visibility]); el.style.setProperty('visibility', 'hidden', 'important'); }
-          }
-        }
-        return scrollY;
-      }, [want, parts.length > 0]);
-      await sleep(180);   // lazy images and repaint
+        const onScreen = [...document.images].filter(img => {
+          if (img.complete) return false;
+          const r = img.getBoundingClientRect();
+          return r.bottom > 0 && r.top < innerHeight && r.width > 0;
+        });
+        await Promise.race([
+          Promise.all(onScreen.map(img => new Promise(res => { img.addEventListener('load', res, { once: true }); img.addEventListener('error', res, { once: true }); }))),
+          new Promise(res => setTimeout(res, 1500))
+        ]);
+        const el = document.scrollingElement || document.documentElement;
+        return { y: scrollY, total: Math.max(el.scrollHeight, document.body?.scrollHeight || 0) };
+      }, [want]);
+      await sleep(120);   // repaint
       const bmp = await createImageBitmap(await (await fetch(await captureTab(tab.windowId))).blob());
       parts.push({ y, bmp });
       const scale = bmp.height / m.vh;
-      if (y + m.vh >= m.total || y < want || (y + m.vh) * scale >= MAX_SHOT_PX) break;
+      if (y + m.vh >= total || y < want || (y + m.vh) * scale >= MAX_SHOT_PX) break;
       want = y + m.vh;
     }
   } finally {
     await run(() => {
       const s = window.__recShot;
       if (!s) return;
-      s.hidden.forEach(([el, v]) => { el.style.visibility = v; });
+      s.moved.forEach(([el, css]) => { el.style.cssText = css; });
+      document.getElementById('__rec_shot_css')?.remove();
       scrollTo(0, s.y);
       document.documentElement.style.scrollBehavior = s.sb;
       delete window.__recShot;
