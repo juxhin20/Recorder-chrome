@@ -486,6 +486,7 @@ window.__recSnip = function snip({ img, mode, labels: L, copyKey }) {
   // Hidden extension frame for copying on pages without a clipboard (not a secure context).
   // It is made when the editor opens so it is ready by the time Copy is pressed.
   let helper = null, helperReady = null;
+  const helperOrigin = chrome.runtime?.getURL ? new URL(chrome.runtime.getURL('')).origin : '';
   if (!page && copyKey && !(window.isSecureContext && navigator.clipboard) && chrome.runtime?.getURL) {
     helper = document.createElement('iframe');
     helper.src = chrome.runtime.getURL('src/copy.html');
@@ -493,7 +494,7 @@ window.__recSnip = function snip({ img, mode, labels: L, copyKey }) {
     helper.setAttribute('aria-hidden', 'true');
     helper.style.cssText = 'all: initial; position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; border: 0; pointer-events: none; z-index: -1;';
     helperReady = new Promise(res => {
-      const on = e => { if (e.source === helper.contentWindow && e.data?.recCopyReady) { removeEventListener('message', on); res(); } };
+      const on = e => { if (e.origin === helperOrigin && e.source === helper.contentWindow && e.data?.recCopyReady) { removeEventListener('message', on); res(); } };
       addEventListener('message', on);
     });
     document.documentElement.append(helper);
@@ -504,13 +505,13 @@ window.__recSnip = function snip({ img, mode, labels: L, copyKey }) {
     const id = Math.random().toString(36).slice(2);
     return new Promise((res, rej) => {
       const on = e => {
-        if (e.source !== helper.contentWindow || e.data?.id !== id) return;
+        if (e.origin !== helperOrigin || e.source !== helper.contentWindow || e.data?.id !== id) return;
         removeEventListener('message', on);
         e.data.ok ? res() : rej(new Error(e.data.error));
       };
       addEventListener('message', on);
       helper.focus();
-      helper.contentWindow.postMessage({ id, key: copyKey, png }, new URL(helper.src).origin);
+      helper.contentWindow.postMessage({ id, key: copyKey, png }, helperOrigin);   // fixed origin: the page could change helper.src
     });
   }
 
