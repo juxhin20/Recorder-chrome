@@ -2,7 +2,7 @@
 // Classic script (no modules) so it can be injected into any page and also used by shot.html.
 // The page itself is never touched: everything lives in a shadow root on top of a frozen screenshot.
 
-window.__recSnip = function snip({ img, mode, labels: L }) {
+window.__recSnip = function snip({ img, mode, labels: L, copyKey }) {
   // mode 'area': the user drags a box. 'visible': the whole viewport is pre-selected.
   // 'page': full-page image inside shot.html (the document scrolls, toolbars stay fixed).
   document.getElementById('__rec_snip')?.remove();
@@ -459,10 +459,13 @@ window.__recSnip = function snip({ img, mode, labels: L }) {
     commitText();
     busy = true;
     const out = render();
-    // Start the clipboard write while the click still counts as a user action.
-    const copying = how === 'copy' && navigator.clipboard.write([new ClipboardItem({ 'image/png': toBlob(out) })]);
     host.style.display = 'none';
     try {
+      // Start the clipboard write while the click still counts as a user action.
+      // Plain http:// pages have no clipboard, so the extension's helper frame copies instead.
+      const copying = how === 'copy' && (window.isSecureContext && navigator.clipboard
+        ? navigator.clipboard.write([new ClipboardItem({ 'image/png': toBlob(out) })])
+        : helperCopy(out));
       if (copying) {
         await copying;
         flash(L.copied);
@@ -480,7 +483,39 @@ window.__recSnip = function snip({ img, mode, labels: L }) {
     }
   }
 
+  // Hidden extension frame for copying on pages without a clipboard (not a secure context).
+  // It is made when the editor opens so it is ready by the time Copy is pressed.
+  let helper = null, helperReady = null;
+  if (!page && copyKey && !(window.isSecureContext && navigator.clipboard) && chrome.runtime?.getURL) {
+    helper = document.createElement('iframe');
+    helper.src = chrome.runtime.getURL('src/copy.html');
+    helper.allow = 'clipboard-write';
+    helper.setAttribute('aria-hidden', 'true');
+    helper.style.cssText = 'all: initial; position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; border: 0; pointer-events: none; z-index: -1;';
+    helperReady = new Promise(res => {
+      const on = e => { if (e.source === helper.contentWindow && e.data?.recCopyReady) { removeEventListener('message', on); res(); } };
+      addEventListener('message', on);
+    });
+    document.documentElement.append(helper);
+  }
+  async function helperCopy(out) {
+    if (!helper) throw new Error('no clipboard');
+    const [png] = await Promise.all([toBlob(out), Promise.race([helperReady, new Promise((_, rej) => setTimeout(() => rej(new Error('helper timeout')), 3000))])]);
+    const id = Math.random().toString(36).slice(2);
+    return new Promise((res, rej) => {
+      const on = e => {
+        if (e.source !== helper.contentWindow || e.data?.id !== id) return;
+        removeEventListener('message', on);
+        e.data.ok ? res() : rej(new Error(e.data.error));
+      };
+      addEventListener('message', on);
+      helper.focus();
+      helper.contentWindow.postMessage({ id, key: copyKey, png }, new URL(helper.src).origin);
+    });
+  }
+
   function close() {
+    helper?.remove();
     removeEventListener('keydown', onKey, true);
     removeEventListener('wheel', noScroll, { capture: true });
     host.remove();

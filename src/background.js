@@ -111,8 +111,8 @@ async function shot(kind, tabId) {
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['src/snip.js'] });
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: (img, mode, labels) => window.__recSnip({ img, mode, labels }),
-        args: [img, kind, snipLabels(t)]
+        func: (img, mode, labels, copyKey) => window.__recSnip({ img, mode, labels, copyKey }),
+        args: [img, kind, snipLabels(t), await newCopyKey()]
       });
     } catch {
       return openShotTab(img);   // a page we can't draw on: edit it in our own tab instead
@@ -160,8 +160,38 @@ async function fullPage(tab) {
       }]);
     }
     s.apply();
-    return { vh: innerHeight, vw: innerWidth, cw: document.documentElement.clientWidth };
+    // Apps like Microsoft Forms, Gmail or Notion don't scroll the page: they scroll one big box inside it.
+    // (Test by trying: such pages often report a few px more than the window but can't move.)
+    scrollTo(0, 1e7);
+    const pageMoves = scrollY > 40;
+    scrollTo(0, 0);
+    if (!pageMoves) {
+      let box = null, best = 0;
+      for (const el of document.querySelectorAll('body *')) {
+        if (el.scrollHeight <= el.clientHeight + 40 || !/(auto|scroll|overlay)/.test(getComputedStyle(el).overflowY)) continue;
+        const r = el.getBoundingClientRect();
+        const area = Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0));
+        if (area > best && area > innerWidth * innerHeight * 0.25) { best = area; box = el; }
+      }
+      if (box) {
+        s.box = box;
+        s.boxY = box.scrollTop;
+        s.boxSb = box.style.scrollBehavior;
+        box.style.setProperty('scroll-behavior', 'auto', 'important');
+        box.setAttribute('data-rec-scroller', '');
+        // Fixed bars inside the box stay as they are (they are hidden after the first screen).
+        s.forced = s.forced.filter(([el, props]) => {
+          if (props.position !== 'absolute' || !box.contains(el)) return true;
+          el.style.cssText = s.moved.find(([m]) => m === el)[1];
+          return false;
+        });
+        css.textContent += ' [data-rec-scroller] { scrollbar-width: none !important; } [data-rec-scroller]::-webkit-scrollbar { display: none !important; }';
+        box.scrollTop = 0;
+      }
+    }
+    return { vh: innerHeight, vw: innerWidth, cw: document.documentElement.clientWidth, box: !!s.box };
   });
+  if (m.box) return boxPage(tab, run, m);
   const parts = [];
   try {
     let want = 0;
@@ -192,18 +222,30 @@ async function fullPage(tab) {
       want = y + m.vh;
     }
   } finally {
-    await run(() => {
+    await restorePage(run);
+  }
+  return stitchWindow(parts, m);
+}
+
+function restorePage(run) {
+  return run(() => {
       const s = window.__recShot;
       if (!s) return;
       s.moved.forEach(([el, css]) => { el.style.cssText = css; });
       document.getElementById('__rec_shot_css')?.remove();
+      if (s.box) {
+        s.box.removeAttribute('data-rec-scroller');
+        s.box.scrollTop = s.boxY;
+        s.box.style.scrollBehavior = s.boxSb;
+      }
       scrollTo(0, s.y);
       dispatchEvent(new Event('scroll'));   // let the page re-place its own bars
       document.documentElement.style.scrollBehavior = s.sb;
       delete window.__recShot;
     }).catch(() => {});
-  }
+}
 
+async function stitchWindow(parts, m) {
   const scale = parts[0].bmp.height / m.vh;
   const last = parts[parts.length - 1];
   const height = Math.min(Math.round((last.y + m.vh) * scale), MAX_SHOT_PX);
@@ -212,6 +254,87 @@ async function fullPage(tab) {
   const canvas = new OffscreenCanvas(width, height);
   const c = canvas.getContext('2d');
   parts.forEach(p => c.drawImage(p.bmp, 0, Math.round(p.y * scale)));
+  return canvasToDataUrl(canvas);
+}
+
+// Full page for apps that scroll an inner box: the part above the box once, then the box
+// one screen at a time, then the part below it once. Drawn as we go so long pages stay light.
+async function boxPage(tab, run, m) {
+  const MAX_BOX_PX = 30000;   // canvas height limit is ~32k; taller pages are scaled down, not cut
+  let canvas = null, c = null, out = 1, scale = 1, total = 0, band = null, prevBottom = 0;
+  try {
+    let want = 0;
+    for (let i = 0; i < 400; i++) {
+      const info = await run(async (y, first) => {
+        const s = window.__recShot;
+        const box = s.box;
+        box.scrollTop = y;
+        const r = box.getBoundingClientRect();
+        const top = Math.max(0, r.top), bottom = Math.min(innerHeight, r.bottom);
+        const onScreen = [...document.images].filter(img => {
+          if (img.complete) return false;
+          const q = img.getBoundingClientRect();
+          return q.bottom > top && q.top < bottom && q.width > 0;
+        });
+        await Promise.race([
+          Promise.all(onScreen.map(img => new Promise(res => { img.addEventListener('load', res, { once: true }); img.addEventListener('error', res, { once: true }); }))),
+          new Promise(res => setTimeout(res, 1500))
+        ]);
+        await new Promise(res => requestAnimationFrame(() => setTimeout(res, 30)));
+        s.apply();
+        // Floating buttons/bars inside the box would repeat on every screen: show them only on the first one.
+        if (!first && !s.hid) {
+          s.hid = [];
+          for (const el of box.querySelectorAll('*')) {
+            if (getComputedStyle(el).position !== 'fixed') continue;
+            s.hid.push([el, el.style.visibility]);
+            el.style.setProperty('visibility', 'hidden', 'important');
+          }
+        }
+        await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+        // Some apps make the box a little taller than the window; that hidden strip can't be shown, so leave it out.
+        return { st: box.scrollTop, sh: box.scrollHeight - Math.max(0, r.bottom - bottom), top, bottom };
+      }, [want, i === 0]);
+      await sleep(60);
+      const bmp = await createImageBitmap(await (await fetch(await captureTab(tab.windowId))).blob());
+      if (!canvas) {
+        scale = bmp.width / m.vw;   // (by width: some windows report a few extra rows)
+        band = info;
+        total = info.top + info.sh + (m.vh - info.bottom);
+        out = Math.min(scale, MAX_BOX_PX / total);
+        const width = m.cw > 0 && m.cw < m.vw ? m.cw : m.vw;
+        canvas = new OffscreenCanvas(Math.round(width * out), Math.round(total * out));
+        c = canvas.getContext('2d');
+        c.imageSmoothingQuality = 'high';
+        // Everything above the box, plus the first screen of the box.
+        c.drawImage(bmp, 0, 0, bmp.width, info.bottom * scale, 0, 0, bmp.width / scale * out, info.bottom * out);
+      } else {
+        // Only the new rows of the box (no overlap with the previous screen).
+        const from = Math.max(info.top, info.top + prevBottom - info.st);
+        const h = info.bottom - from;
+        // Start 2 rows early so rounding never leaves a hairline between screens (those rows are the same picture).
+        const f = Math.max(info.top, from - 2), fh = info.bottom - f;
+        if (h > 0) c.drawImage(bmp, 0, f * scale, bmp.width, fh * scale, 0, (info.st + f) * out, bmp.width / scale * out, fh * out);
+      }
+      prevBottom = info.st + (info.bottom - info.top);
+      const done = info.st + (info.bottom - info.top) >= info.sh - 1 || (i > 0 && info.st < want);
+      if (done) {
+        // Whatever is below the box (footer), once.
+        if (m.vh > info.bottom) c.drawImage(bmp, 0, info.bottom * scale, bmp.width, (m.vh - info.bottom) * scale, 0, (info.top + info.sh) * out, bmp.width / scale * out, (m.vh - info.bottom) * out);
+        bmp.close();
+        break;
+      }
+      bmp.close();
+      want = info.st + (info.bottom - info.top);
+    }
+  } finally {
+    await run(() => (window.__recShot?.hid || []).forEach(([el, v]) => { el.style.visibility = v; })).catch(() => {});
+    await restorePage(run);
+  }
+  return canvasToDataUrl(canvas);
+}
+
+async function canvasToDataUrl(canvas) {
   const blob = await canvas.convertToBlob({ type: 'image/png' });
   return new Promise((res, rej) => {
     const fr = new FileReader();
@@ -371,6 +494,20 @@ async function finish() {
   if (settings.openLibrary) await openLibrary();
 }
 
+// One-time keys for the hidden copy frame (src/copy.html), so web pages can't use it to fill the clipboard.
+async function newCopyKey() {
+  const key = crypto.randomUUID();
+  const { copyKeys = [] } = await chrome.storage.session.get('copyKeys');
+  await chrome.storage.session.set({ copyKeys: [...copyKeys.slice(-9), key] });
+  return key;
+}
+async function useCopyKey(key) {
+  const { copyKeys = [] } = await chrome.storage.session.get('copyKeys');
+  if (!copyKeys.includes(key)) return false;
+  await chrome.storage.session.set({ copyKeys: copyKeys.filter(k => k !== key) });
+  return true;
+}
+
 // ---------- messages ----------
 
 // Messages from inside web pages (our injected editor) may only save a screenshot.
@@ -391,6 +528,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       case 'shot': return shot(msg.kind, msg.tabId);
       case 'takeShot': { const img = pendingShot; pendingShot = null; return { img }; }
       case 'saveShot': return saveShot(msg.dataUrl, msg.ext);
+      case 'useCopyKey': return sender.url === chrome.runtime.getURL('src/copy.html') && useCopyKey(msg.key);
 
       // events from offscreen
       case 'tick': return update(msg.patch);
